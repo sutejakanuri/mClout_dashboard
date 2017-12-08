@@ -1,5 +1,5 @@
 
-path="C:/Users/suteja.kanuri/Documents/MC/mFluence/Copy of Report-Multiple-09-06-2017-to-28-06-2017 (003).xlsx"
+#path="C:/Users/suteja.kanuri/Documents/MC/mFluence/Copy of Report-Multiple-09-06-2017-to-28-06-2017 (003).xlsx"
 # FB_Post_Data  =read_excel(path, sheet = "FB Post Data", encoding="UTF-8", stringsAsFactors=FALSE)
 # FB_Post_Data$Market= as.character(lapply(strsplit(as.character(FB_Post_Data$Label1), split="_"),tail, n=1))
 # unique_markets =  unique(as.character(lapply(strsplit(as.character(FB_Post_Data$Label1), split="_"),tail, n=1)))
@@ -2073,7 +2073,7 @@ server=shinyServer(function(input, output, session){
   })
 
   
-  reactive_TW_Post_Data = reactive({
+  reactive_TW_Post_Data <<- reactive({
     validate(
       need(input$input_file_upload$name != "", "Please wait till the file is being uploaded!")
     )
@@ -2087,7 +2087,7 @@ server=shinyServer(function(input, output, session){
     return (TW_Post_Data)
   })
   
-  reactive_IG_Post_Data = reactive({
+  reactive_IG_Post_Data <<- reactive({
     validate(
       need(input$input_file_upload$name != "", "Please wait till the file is being uploaded!")
     )
@@ -2101,7 +2101,7 @@ server=shinyServer(function(input, output, session){
     return (IG_Post_Data)
   })
   
-  reactive_IG_Summary_Data = reactive({
+  reactive_IG_Summary_Data <<-reactive({
     
     validate(
       need(input$input_file_upload$name != "", "Please wait till the file is being uploaded!")
@@ -2118,7 +2118,7 @@ server=shinyServer(function(input, output, session){
     return (IG_Summary_Data)
   })
   
-  reactive_FB_Page_Data = reactive ({
+  reactive_FB_Page_Data<<-reactive ({
     
     validate(
       need(input$input_file_upload$name != "", "Please wait till the file is being uploaded!")
@@ -2134,7 +2134,7 @@ server=shinyServer(function(input, output, session){
     return (FB_Page_Data)
   })
   
-  reactive_TW_Page_Data = reactive ({
+  reactive_TW_Page_Data<<-reactive ({
     
     validate(
       need(input$input_file_upload$name != "", "Please wait till the file is being uploaded!")
@@ -2151,7 +2151,7 @@ server=shinyServer(function(input, output, session){
     return (TW_Page_Data)
   })
   
-  reactive_FB_Summary_Stats = reactive ({
+  reactive_FB_Summary_Stats<<-reactive ({
     
     validate(
       need(input$input_file_upload$name != "", "Please wait till the file is being uploaded!")
@@ -2167,7 +2167,7 @@ server=shinyServer(function(input, output, session){
   })
   
   
-  reactive_IG_Page_Data = reactive ({
+  reactive_IG_Page_Data<<-reactive ({
     #IG_Page_Data=read_excel(input$input_file_upload$datapath,sheet="IG Page Data")
     
     validate(
@@ -2183,39 +2183,39 @@ server=shinyServer(function(input, output, session){
     return (IG_Page_Data)
   })
   
-  reactive_return_year = reactive({
+  reactive_return_year<<-reactive({
     return (input$Year)
     
   })
   
-  reactive_return_count_asset = reactive({
+  reactive_return_count_asset<<-reactive({
     return (input$count_mrp)
   })
   
-  reactive_return_Influencer_mrp = reactive({
+  reactive_return_Influencer_mrp<<-reactive({
     return (input$Influencer_mrp)
   })
-  reactive_return_metric_mrp = reactive({
+  reactive_return_metric_mrp<<-reactive({
     return (input$metric_mrp)
   })
-  reactive_return_Month_mrp = reactive({
+  reactive_return_Month_mrp<<-reactive({
     return (input$Month_mrp)
   })
-  reactive_return_Year_mrp = reactive({
+  reactive_return_Year_mrp<<-reactive({
     return (input$Year_mrp)
   })
   
-  reactive_return_metric = reactive({
+  reactive_return_metric<<-reactive({
     return (input$metric_mt)
     
   })
   
-  reactive_return_week = reactive({
+  reactive_return_week<<-reactive({
     return (input$Week)
     
   })
   
-  reactive_influencer_unique_names = reactive({
+  reactive_influencer_unique_names<<-reactive({
     
     TW_Post_Data = reactive_TW_Post_Data()
     TW_Post_Data = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==TRUE,]
@@ -2250,7 +2250,7 @@ server=shinyServer(function(input, output, session){
     
     
   })
-  reactive_year = reactive({
+  reactive_year<<-reactive({
     FB_Post_Data = reactive_FB_Post_Data()
     FB_Post_Data = FB_Post_Data[grepl("sk2", FB_Post_Data$Label1)==TRUE,]
     
@@ -2274,7 +2274,7 @@ server=shinyServer(function(input, output, session){
     return (year)
   })
   
-  reactive_year_ps = reactive({
+  reactive_year_ps<<-reactive({
     
     # FB_Post_Data = reactive_FB_Post_Data()
     # FB_Post_Data = FB_Post_Data[grepl("sk2", FB_Post_Data$Label1)==TRUE,]
@@ -2304,7 +2304,7 @@ server=shinyServer(function(input, output, session){
   })
   
  
-  reactive_year_ht = reactive({
+  reactive_year_ht<<-reactive({
     
     require (input$platform_ht )
     if (length(input$platform_ht)==0) return()
@@ -2330,7 +2330,7 @@ server=shinyServer(function(input, output, session){
     return (year)
   })
   
-  reactive_top_influencer_image_url <- reactive({ 
+  reactive_top_influencer_image_url<<-reactive({ 
     
     # FB_Post_Data  = reactive_FB_Post_Data()
     # FB_Post_Data = FB_Post_Data[grepl("sk2", FB_Post_Data$Label1)==TRUE,c('post_impressions_unique','post_link','post_image')]
@@ -2393,7 +2393,7 @@ server=shinyServer(function(input, output, session){
     
   })
   
-  reactive_top_post_url <- reactive({ 
+  reactive_top_post_url<<-reactive({ 
     
     FB_Post_Data  = reactive_FB_Post_Data()
     FB_Post_Data = FB_Post_Data[grepl("sk2", FB_Post_Data$Label1)==TRUE,c('post_impressions_unique','post_link','post_image')]
@@ -2410,20 +2410,20 @@ server=shinyServer(function(input, output, session){
   })
 
   #post summary - screen 1
-  reactive_return_market_ps = reactive({
+  reactive_return_market_ps<<-reactive({
     return (input$Market_ps)
   })
-  reactive_return_month_ps = reactive({
+  reactive_return_month_ps<<-reactive({
     
     return (map_month(input$Month_ps))
   })
-  reactive_return_year_ps = reactive({
+  reactive_return_year_ps<<-reactive({
     return (input$Year_ps)
   })
   
   
   
-  reactive_return_getTop10Infleuncer = reactive({
+  reactive_return_getTop10Infleuncer<<-reactive({
     
     
     # FB_Post_Data = reactive_FB_Post_Data()
@@ -2461,7 +2461,7 @@ server=shinyServer(function(input, output, session){
     return (top10)
   })
   
-  reactive_get_influencer1_stats  = reactive({
+  reactive_get_influencer1_stats<<-reactive({
     
     # FB_Summary_Data = reactive_FB_Summary_Stats()
     TW_Page_Data = reactive_TW_Page_Data()
@@ -2477,7 +2477,7 @@ server=shinyServer(function(input, output, session){
     
   })
   
-  reactive_get_influencer2_stats  = reactive({
+  reactive_get_influencer2_stats<<-reactive({
     
     # FB_Summary_Data = reactive_FB_Summary_Stats()
     TW_Page_Data = reactive_TW_Page_Data()
@@ -2493,7 +2493,7 @@ server=shinyServer(function(input, output, session){
     
   })
   
-  reactive_get_influencer3_stats  = reactive({
+  reactive_get_influencer3_stats<<-reactive({
     
     # FB_Summary_Data = reactive_FB_Summary_Stats()
     TW_Page_Data = reactive_TW_Page_Data()
@@ -2509,7 +2509,7 @@ server=shinyServer(function(input, output, session){
     
   })
   
-  reactive_get_influencer4_stats  = reactive({
+  reactive_get_influencer4_stats<<-reactive({
     
     # FB_Summary_Data = reactive_FB_Summary_Stats()
     TW_Page_Data = reactive_TW_Page_Data()
@@ -2525,7 +2525,7 @@ server=shinyServer(function(input, output, session){
     
   })
   
-  reactive_get_influencer5_stats  = reactive({
+  reactive_get_influencer5_stats<<-reactive({
     
     # FB_Summary_Data = reactive_FB_Summary_Stats()
     TW_Page_Data = reactive_TW_Page_Data()
@@ -2541,7 +2541,7 @@ server=shinyServer(function(input, output, session){
     
   })
   
-  reactive_get_influencer6_stats  = reactive({
+  reactive_get_influencer6_stats<<-reactive({
     # FB_Summary_Data = reactive_FB_Summary_Stats()
     TW_Page_Data = reactive_TW_Page_Data()
     IG_Page_Data = reactive_IG_Page_Data()
@@ -2556,7 +2556,7 @@ server=shinyServer(function(input, output, session){
     
   })
   
-  reactive_get_influencer7_stats  = reactive({
+  reactive_get_influencer7_stats<<-reactive({
     
     # FB_Summary_Data = reactive_FB_Summary_Stats()
     TW_Page_Data = reactive_TW_Page_Data()
@@ -2572,7 +2572,7 @@ server=shinyServer(function(input, output, session){
     
   })
   
-  reactive_get_influencer8_stats  = reactive({
+  reactive_get_influencer8_stats<<-reactive({
     
     # FB_Summary_Data = reactive_FB_Summary_Stats()
     TW_Page_Data = reactive_TW_Page_Data()
@@ -2588,7 +2588,7 @@ server=shinyServer(function(input, output, session){
     
   })
   
-  reactive_get_influencer9_stats  = reactive({
+  reactive_get_influencer9_stats<<-reactive({
     
     # FB_Summary_Data = reactive_FB_Summary_Stats()
     TW_Page_Data = reactive_TW_Page_Data()
@@ -2604,7 +2604,7 @@ server=shinyServer(function(input, output, session){
     
   })
   
-  reactive_get_influencer10_stats  = reactive({
+  reactive_get_influencer10_stats<<-reactive({
     
     # FB_Summary_Data = reactive_FB_Summary_Stats()
     TW_Page_Data = reactive_TW_Page_Data()
@@ -2659,18 +2659,18 @@ server=shinyServer(function(input, output, session){
 
   })
   
-  reactive_get_raw_date = reactive({
+  reactive_get_raw_date<<-reactive({
     df=reactive_week()
     return (df$raw_date_range)
   })
   
-  reactive_get_display_date = reactive({
+  reactive_get_display_date<<-reactive({
     df=reactive_week()
     return (df$date_range)
   })
   
 
-  reactive_market_ps = reactive({
+  reactive_market_ps<<-reactive({
     
     # if (length(v$button_clicked)==0) return()
     # print(v$button_clicked)
@@ -2703,7 +2703,7 @@ server=shinyServer(function(input, output, session){
     
   })
   
-  reactive_get_weekly_trend = reactive({
+  reactive_get_weekly_trend<<-reactive({
     
     IG_Page_Data = reactive_IG_Page_Data()
     IG_Post_Data = reactive_IG_Post_Data() 
@@ -2739,7 +2739,7 @@ server=shinyServer(function(input, output, session){
   })
   
   
-  filter_posts = reactive ({
+  filter_posts<<-reactive ({
     
     all_posts          =    get_all_posts()
     influencer_name    = reactive_return_Influencer_mrp()
@@ -2786,7 +2786,7 @@ server=shinyServer(function(input, output, session){
     return (filter_posts)
   })
   
-  get_all_posts = reactive ({
+  get_all_posts<<-reactive ({
     TW_Post_Data  = reactive_TW_Post_Data()
     TW_Post_Data = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==TRUE,]
     TW_Post_Data = add_mscore(TW_Post_Data,"TW")
@@ -2841,7 +2841,7 @@ server=shinyServer(function(input, output, session){
     
   })
   
-  get_historical_trend_data = reactive ({
+  get_historical_trend_data<<-reactive ({
     
     #data= NULL
     

@@ -1,0 +1,12 @@
+name: mClout_dashboard
+title: mClout_dashboard
+username:
+account: sutejakanuri
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 246123
+bundleId: 1122498
+url: https://sutejakanuri.shinyapps.io/mClout_dashboard/
+when: 1512707454.23487
+asMultiple: FALSE
+asStatic: FALSE
