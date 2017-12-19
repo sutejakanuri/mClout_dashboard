@@ -359,7 +359,7 @@ server=shinyServer(function(input, output, session){
       data = data[rev(order(data$Date)),c('Text')]
     }
     if(input$platform_ht == 'Instagram'){
-      IG_Comment_Data  = reactive_IG_Comments_Data()
+      IG_Comment_Data  = reactive_IG_Comments_Data
       
       IG_Comment_Data = subset(IG_Comment_Data,tolower(IG_Comment_Data$Username) == tolower(influencer_name) )
       IG_Comment_Data=subset(IG_Comment_Data, as.numeric(sapply(strsplit(as.character(IG_Comment_Data$Date), split="/"),tail, n=1)) == input$year_ht )
@@ -438,7 +438,7 @@ server=shinyServer(function(input, output, session){
     }
     
     else if(input$platform_ht == 'Instagram'){
-      IG_Post_Data  = reactive_TW_Post_Data
+      IG_Post_Data  = reactive_IG_Post_Data
       IG_Post_Data = IG_Post_Data[grepl("sk2", IG_Post_Data$Label1)==TRUE,]
       IG_Post_Data = add_mscore(IG_Post_Data,"IG")
       IG_Page_Data = reactive_IG_Page_Data
@@ -479,6 +479,8 @@ server=shinyServer(function(input, output, session){
       #View(data)
       
     }
+    data$`EARNED EFFECTIVE REACH`[(data$`EARNED EFFECTIVE REACH` - floor(data$`EARNED EFFECTIVE REACH`)) <.5]  = floor(data$`EARNED EFFECTIVE REACH`[(data$`EARNED EFFECTIVE REACH` - floor(data$`EARNED EFFECTIVE REACH`)) < .5])
+    data$`EARNED EFFECTIVE REACH`[(data$`EARNED EFFECTIVE REACH` - floor(data$`EARNED EFFECTIVE REACH`)) >= .5]= ceiling(data$`EARNED EFFECTIVE REACH`[(data$`EARNED EFFECTIVE REACH` - floor(data$`EARNED EFFECTIVE REACH`)) >= .5])
     return (data)
     
   })
@@ -1647,7 +1649,7 @@ server=shinyServer(function(input, output, session){
     selectInput('metric_mt', '', choices = c("Earned Effective Reach","Engagement"),width="auto" )
   })
   output$select_metric_mrp = renderUI({
-    selectInput('metric_mrp', '', choices = c("Earned Effective Reach","Engagement","Sentiment","M-Score"),width="auto" )
+    selectInput('metric_mrp', '', choices = c("Earned Effective Reach","Engagement","Sentiment","M-Score"),width="400px" )
   })
   TIP <- reactiveValues()
   observe({
@@ -1668,11 +1670,14 @@ server=shinyServer(function(input, output, session){
     tags$style(".fa-info-circle {color:#ffffff }")
     box(title=strong("EARNED EFFECTIVE REACH"),div(id="reach_text",h1(textOutput("display_total_reach")),style = "color: #E1005D;"),solidHeader = TRUE,width = 3,height=250 ,
         tipify(el = icon(name = "info-circle", lib = "font-awesome"), title = TIP$EER_text))
+    #box(title=strong("EARNED EFFECTIVE REACH"),id="reach_text",h1(textOutput("display_total_reach")),style = "color: #E1005D;",solidHeader = TRUE,width = 3,height=250 )
   })
   
   output$dynamic_UI_box <- renderUI({
     
     filtered_posts_df=filter_posts()
+    filtered_posts_df$`EARNED EFFECTIVE REACH`[(filtered_posts_df$`EARNED EFFECTIVE REACH` - floor(filtered_posts_df$`EARNED EFFECTIVE REACH`)) <.5]  = floor(filtered_posts_df$`EARNED EFFECTIVE REACH`[(filtered_posts_df$`EARNED EFFECTIVE REACH` - floor(filtered_posts_df$`EARNED EFFECTIVE REACH`)) < .5])
+    filtered_posts_df$`EARNED EFFECTIVE REACH`[(filtered_posts_df$`EARNED EFFECTIVE REACH` - floor(filtered_posts_df$`EARNED EFFECTIVE REACH`)) >= .5]= ceiling(filtered_posts_df$`EARNED EFFECTIVE REACH`[(filtered_posts_df$`EARNED EFFECTIVE REACH` - floor(filtered_posts_df$`EARNED EFFECTIVE REACH`)) >= .5])
     # View(filtered_posts_df)
     option_selected = as.character(reactive_return_count_asset())
     if (grepl("All", option_selected)==TRUE){
@@ -1991,6 +1996,9 @@ server=shinyServer(function(input, output, session){
     
     
     consolidated_data = rbind(TW,IG)
+    consolidated_data$`EARNED EFFECTIVE REACH`[(consolidated_data$`EARNED EFFECTIVE REACH` - floor(consolidated_data$`EARNED EFFECTIVE REACH`)) <.5]  = floor(consolidated_data$`EARNED EFFECTIVE REACH`[(consolidated_data$`EARNED EFFECTIVE REACH` - floor(consolidated_data$`EARNED EFFECTIVE REACH`)) < .5])
+    consolidated_data$`EARNED EFFECTIVE REACH`[(consolidated_data$`EARNED EFFECTIVE REACH` - floor(consolidated_data$`EARNED EFFECTIVE REACH`)) >= .5]= ceiling(consolidated_data$`EARNED EFFECTIVE REACH`[(consolidated_data$`EARNED EFFECTIVE REACH` - floor(consolidated_data$`EARNED EFFECTIVE REACH`)) >= .5])
+    
     
     consolidated_data=dplyr::arrange(consolidated_data, desc(DATE))
     
