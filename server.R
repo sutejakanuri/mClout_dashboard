@@ -2005,7 +2005,7 @@ server=shinyServer(function(input, output, session){
     if(nrow(consolidated_data)!=0){
       height = " width=\"50\" height=\"52\"></img>"
       consolidated_data$picture_str = paste0("\"",consolidated_data$URL,"\"")
-      consolidated_data$POST = paste("<img class='img-circle' src=",consolidated_data$picture_str,height)
+      consolidated_data$POST = paste("<a href=\"https://www.w3schools.com\"><img class='img-circle' src=",consolidated_data$picture_str,height)
       #consolidated_data$POST = paste("<img src=",consolidated_data$picture_str,height)
       consolidated_data$URL = NULL
       consolidated_data$picture_str=NULL

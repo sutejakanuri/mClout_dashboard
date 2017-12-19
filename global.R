@@ -13,7 +13,9 @@ library(DT)
 #This method fetches week entries for the drop down 
 #Screen: 1
 ###################################################
-
+create_link<-function(df){
+  sprintf('<a href="https://www.google.com/#q=%s" target="_blank">Info</a>',val)
+}
 
 fetch_week_dropdown <- function(Post_Data){
   

@@ -1,6 +1,6 @@
 library(shiny)
 library(shinydashboard)
-library(shinythemes)
+
 #defaultPlotlyConfiguration = { modeBarButtonsToRemove: ['sendDataToCloud', 'autoScale2d', 'hoverClosestCartesian', 'hoverCompareCartesian', 'lasso2d', 'select2d'], displaylogo: false, showTips: true };
 
 # value = textOutput("tooltip_EER")
