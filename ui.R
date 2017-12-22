@@ -32,12 +32,12 @@ dashboardPage(
                               
                               /* logo when hovered */
                               .skin-blue .main-header .logo:hover {
-                              background-color: #f4b943;
+                              background-color: #F10F53;
                               }
                               
                               /* navbar (rest of the header) */
                               .skin-blue .main-header .navbar {
-                              background-color: #f4b943;
+                              background-color: #F10F53;
                               }        
                               
                               /* main sidebar */
