@@ -236,7 +236,8 @@ server=shinyServer(function(input, output, session){
     
     most_recent_posts$picture_str = paste0("\"",most_recent_posts$URL,"\"")
     
-    most_recent_posts$IMAGE = paste("<a href=",most_recent_posts$POST_URL ,"><img class='img-circle' src=",most_recent_posts$picture_str,height)
+    #most_recent_posts$IMAGE = paste("<a href=",most_recent_posts$POST_URL ,"><img class='img-circle' src=",most_recent_posts$picture_str,height)
+    most_recent_posts$IMAGE = paste("<a href=",most_recent_posts$POST_URL ,"><img src=",most_recent_posts$picture_str,height)
     most_recent_posts$URL = NULL
     most_recent_posts$picture_str=NULL
     most_recent_posts$POST_URL=NULL
@@ -400,7 +401,9 @@ server=shinyServer(function(input, output, session){
     
     height = " width=\"50\" height=\"52\"></img>"
     data$picture_str = paste0("\"",data$POST,"\"")
-    data$POST = paste("<a href=",data$POST_URL ,"><img class='img-circle' src=",data$picture_str,height)
+    #data$POST = paste("<a href=",data$POST_URL ,"><img class='img-circle' src=",data$picture_str,height)
+    data$POST = paste("<a href=",data$POST_URL ,"><img src=",data$picture_str,height)
+    
     data$URL = NULL
     data$picture_str=NULL
     data$POST_URL=NULL
@@ -502,8 +505,8 @@ server=shinyServer(function(input, output, session){
     if(is.null(data)== FALSE  ){
       height = " height=\"52\" height=\"52\"></img>"
       data$picture_str = paste0("\"",data$URL,"\"")
-      
-      data$post = paste("<a href=",data$POST_URL,"><img class='img-circle' src=",data$picture_str,height)
+      #data$post = paste("<a href=",data$POST_URL,"><img class='img-circle' src=",data$picture_str,height)
+      data$post = paste("<a href=",data$POST_URL,"><img src=",data$picture_str,height)
       data$URL = NULL
       data$POST_URL=NULL
       data$picture_str=NULL
@@ -2055,8 +2058,9 @@ server=shinyServer(function(input, output, session){
       height = " width=\"50\" height=\"52\"></img>"
       consolidated_data$picture_str = paste0("\"",consolidated_data$URL,"\"")
       test_url=consolidated_data$TEST #"https://www.w3schools.com"
-      consolidated_data$POST = paste("<a href=",test_url,"><img class='img-circle' src=",consolidated_data$picture_str,height)
-      #consolidated_data$POST = paste("<img src=",consolidated_data$picture_str,height)
+      #consolidated_data$POST = paste("<a href=",test_url,"><img class='img-circle' src=",consolidated_data$picture_str,height)
+      consolidated_data$POST = paste("<a href=",test_url,"><img src=",consolidated_data$picture_str,height)
+      
       consolidated_data$URL = NULL
       consolidated_data$picture_str=NULL
       consolidated_data$TEST=NULL
