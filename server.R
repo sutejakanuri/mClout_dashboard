@@ -1831,7 +1831,9 @@ server=shinyServer(function(input, output, session){
     box(title=strong("ENGAGEMENT"),div(id="engagement_text",h1(textOutput("display_total_engagement")),style = "color: #E1005D;"),solidHeader = TRUE,width = 3,height=250 ,
         tipify(el = icon(name = "info-circle", lib = "font-awesome"), title = TIP$Engagment_text))
   })
-  
+  output$select_platform = renderUI({
+    selectInput('platform_summary', '', choices = c("Twitter","Instagram"),width="80px")
+  })
   output$select_market = renderUI({
     selectInput('Market_ps', '', reactive_market_ps(),width="120px")
   })
@@ -1973,6 +1975,90 @@ server=shinyServer(function(input, output, session){
     title
   })
   
+  output$test_table <-  DT::renderDataTable({
+    
+    #print (paste(as.character(input$dateRange)))
+    
+    start_date =  reactive_return_start_date()
+    print(start_date)
+    start_date = paste(unlist(strsplit(start_date,"-"))[3],unlist(strsplit(start_date,"-"))[2],unlist(strsplit(start_date,"-"))[1],sep="-")
+    start_date=dmy(start_date)
+    end_date   =  reactive_return_year_end_date()
+    end_date = paste(unlist(strsplit(end_date,"-"))[3],unlist(strsplit(end_date,"-"))[2],unlist(strsplit(end_date,"-"))[1],sep="-")
+    end_date = dmy(end_date)
+    platform   = reactive_return_platform()
+    print (end_date)
+    print (start_date)
+    if (platform=="Instagram"){
+      data <- data.frame(matrix(ncol = 8, nrow = 0))
+      
+      IG_Post_Data     = reactive_IG_Post_Data
+      IG_Post_Data = IG_Post_Data[grepl("sk2", IG_Post_Data$Label1)==TRUE,]
+      
+      IG_Comment_Data = reactive_IG_Comments_Data
+      
+      IG_Comment_Data$Date=gsub("/", "-", IG_Comment_Data$Date)
+      IG_Comment_Data$Date = dmy(IG_Comment_Data$Date)
+      
+      subset_IG_Comment_Data = subset(IG_Comment_Data, IG_Comment_Data$Date>=start_date & IG_Comment_Data$Date <=end_date)
+      View(subset_IG_Comment_Data)
+      if (nrow(subset_IG_Comment_Data)!=0){
+        data=merge(subset_IG_Comment_Data,IG_Post_Data, by  = c("Media ID"))
+        if (nrow(data!=0)){
+          View(data)
+           data = select(data,Username.x,Date.x,Caption,Message,Type,Sentiment,`Media URL`,Media)
+           names(data)=c("KOLNAME","DATE","POSTDESC","COMMENT","TYPE","Sentiment","POSTIMAGE","POSTURL")
+           data=data[ order(data$DATE, decreasing = TRUE ),]
+        }
+      }
+  
+    }
+
+    if (nrow(data)!=0){
+          height = " width=\"52\" height=\"52\"></img>"
+          data$picture_str = paste0("\"",data$POSTIMAGE,"\"")
+          View(data)
+          data$IMAGE = paste("<a href=",data$POSTURL ,"><img src=",data$picture_str,height)
+          data$POSTIMAGE = NULL
+          data$picture_str=NULL
+          data$POSTURL=NULL
+          names(data)=c("KOL NAME","DATE","POST DESC","COMMENT","TYPE","SENTIMENT","POST")
+          data$SENTIMENT[data$SENTIMENT <=39] = "NEGATIVE"
+          data$SENTIMENT[data$SENTIMENT >= 40 & data$SENTIMENT <=49 ] = "NEUTRAL"
+          data$SENTIMENT[data$SENTIMENT >=49] = "POSITIVE"
+          
+          
+          
+    }
+    DT::datatable(data,escape=F, options = list(scrollX = TRUE,language = list(
+      zeroRecords = "No records to display for the selected filter! Please change the filter options and try again.")  ,pageLength = 10,searching = FALSE,columnDefs = list(list(
+        targets = 3,
+        
+        render = JS(
+          "function(data, type, row, meta) {",
+          "return type === 'display' && data.length > 6 ?",
+          "'<span title=\"' + data + '\">' + data.substr(0, 30) + '...</span>' : data;",
+          "}")
+        
+        
+        
+      ))))
+    
+  })
+  
+  reactive_return_start_date<<-reactive({
+    return (as.character(input$dateRange[1]))
+    #(unlist(lapply(strsplit(as.character(input$dateRange), split="\\s"),head, n=1)))
+  })
+  
+  reactive_return_year_end_date<<-reactive({
+    return (as.character(input$dateRange[2]))
+    #return (unlist(lapply(strsplit(as.character(input$dateRange), split="\\s"),tail, n=1)))
+  })
+  
+  reactive_return_platform<<-reactive({
+    return (input$platform_summary)
+  })
   output$post_summary_table <-  DT::renderDataTable({
     
     consolidated_data = NULL

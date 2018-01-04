@@ -139,7 +139,18 @@ dashboardPage(
                 column(2,uiOutput('select_month')),
                 column(2,uiOutput('select_year_ps'))
               ),
-              DT::dataTableOutput('post_summary_table')
+              DT::dataTableOutput('post_summary_table'),
+              
+              fluidRow(
+                column(6, h3(strong("NAME THE TABLE"),style = "color: #BE9200;")),
+                column(3,uiOutput('select_platform')),
+                column(3,dateRangeInput('dateRange',
+                               label = '',
+                               start = Sys.Date() - 2, end = Sys.Date() + 2
+                ))
+                
+              ),
+              DT::dataTableOutput('test_table')
               
               # h3(strong("WEEKLY TREND"),style = "color: #BE9200;"),
               # 
