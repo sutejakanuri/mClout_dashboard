@@ -24,6 +24,10 @@ dashboardPage(
                    )
   ),
   dashboardBody(
+    # tags$style(type="text/css",
+    #            ".shiny-output-error { visibility: hidden; }",
+    #            ".shiny-output-error:before { visibility: hidden; }"
+    # ),
     tags$head(tags$style(HTML('
                               /* logo */
                               .skin-blue .main-header .logo {
@@ -100,9 +104,10 @@ dashboardPage(
       # ),
       tabItem(tabName = "summary",
               fluidRow(
-                column(9,h3(strong("WEEKLY TOPLINE"),style = "color: #BE9200;")),
-                column(2,offset=1,selectInput("market_wt", "", choices = c("Japan"),width="120px"))
-              ),
+                column(5,h3(strong("WEEKLY TOPLINE"),style = "color: #BE9200;")),
+                column(2,offset=2,selectInput("market_wt", "", choices = c("Japan"),width="120px")),
+                column(3,htmlOutput("summary_daterange_selector"))
+                ),
               box(title=strong("TOP INFLUENCER"),uiOutput("top_infleuncer_image"),solidHeader = TRUE,width = 3,height=250),
               
               
@@ -142,11 +147,12 @@ dashboardPage(
               DT::dataTableOutput('post_summary_table'),
               
               fluidRow(
-                column(6, h3(strong("NAME THE TABLE"),style = "color: #BE9200;")),
+                column(6, h3(strong("RESPONSE COMMENTS"),style = "color: #BE9200;")),
                 column(3,uiOutput('select_platform')),
+                #column(3,htmlOutput("daterange_selector"))
                 column(3,dateRangeInput('dateRange',
                                label = '',
-                               start = Sys.Date() - 2, end = Sys.Date() + 2
+                               start = Sys.Date(), end = Sys.Date() + 6
                 ))
                 
               ),
@@ -171,17 +177,17 @@ dashboardPage(
               #uiOutput("infleuncerImage2", height = 300),
               #tags$div(id = 'placeholder') 
               # tags$head(
-              # tags$style(HTML("
-              #       .round {
-              #                 display:block;
-              #                 height: 160px;
-              #                 width: 160px;
-              #                 border-radius: 100%;
-              #                 border: 1px solid black;
-              # 
-              #                 }
-              # 
-              #                 "))),
+              tags$style(HTML("
+                    .round {
+                              display:block;
+                              height: 160px;
+                              width: 160px;
+                              border-radius: 100%;
+                              border: 1px black;
+
+                              }
+
+                              ")),
               fluidRow(
                 
                 column(2, tags$button(

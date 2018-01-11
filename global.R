@@ -241,52 +241,75 @@ add_EER <- function(Page_Data,Post_Data,platform){
   return(df)
 }
 add_mscore <- function(df,type){
+  df$sentiment_keyword=""
+  df$weight=0
   
+  df[df$Sentiment <=39,"sentiment_keyword"] = "NEGATIVE"
+  #df[df$Sentiment <=39,"weight"] = -1
+
+  df[df$Sentiment >= 40 & df$Sentiment <=49,"sentiment_keyword" ] = "NEUTRAL"
+  #df[data$Sentiment <=39,"weight"] = 0
+
+  df[df$Sentiment >=49,"sentiment_keyword"] = "POSITIVE"
+  #df[df$Sentiment <=39,"weight"] = 1
+  
+  df[df$sentiment_keyword=="POSITIVE","weight"] = 1
+  df[df$sentiment_keyword=="NEUTRAL","weight"] = 0
+  df[df$sentiment_keyword=="NEGATIVE","weight"] = -1
+  
+  #View(df)
   if (type == "FB"){
     
-    if (df$sentiment >=0 && df$sentiment <= 39){
-      df$weight=-1
-      df$sentiment_keyword="NEGATIVE"
-    }else if(df$sentiment >=40 && df$sentiment <= 49){
-      df$weight=0
-      df$sentiment_keyword="NEUTRAL"
-    }else {
-      df$weight=1
-      df$sentiment_keyword="POSITIVE"
-    }
+    # if (df$sentiment >=0 && df$sentiment <= 39){
+    #   df$weight=-1
+    #   df$sentiment_keyword="NEGATIVE"
+    # }else if(df$sentiment >=40 && df$sentiment <= 49){
+    #   df$weight=0
+    #   df$sentiment_keyword="NEUTRAL"
+    # }else {
+    #   df$weight=1
+    #   df$sentiment_keyword="POSITIVE"
+    # }
+    
+    
     df$mscore = df$`Reaction Likes` + df$`Reaction Love`+df$`Reaction Haha`+df$`Reaction Wow` - df$`Reaction Sad`-df$`Reaction Anger` + (df$Comments * df$sentiment * df$weight) + df$Shares
   }
   if (type =="IG"){
       
-    if (df$Sentiment >=0 && df$Sentiment <= 39){
-      df$weight=-1
-      df$sentiment_keyword="NEGATIVE"
-    }else if(df$Sentiment >=40 && df$Sentiment <= 49){
-      df$weight=0
-      df$sentiment_keyword="NEUTRAL"
-    }else {
-      df$weight=1
-      df$sentiment_keyword="POSITIVE"
-    }
+    # if (df$Sentiment >=0 && df$Sentiment <= 39){
+    #   df$weight=-1
+    #   df$sentiment_keyword="NEGATIVE"
+    # }else if(df$Sentiment >=40 && df$Sentiment <= 49){
+    #   df$weight=0
+    #   df$sentiment_keyword="NEUTRAL"
+    # }else {
+    #   df$weight=1
+    #   df$sentiment_keyword="POSITIVE"
+    # }
+    
+    
+    
     df$mscore = df$Likes + (df$Comments*df$Sentiment*df$weight)
   }
   
   if (type == "TW"){
     
-    if (df$Sentiment >=0 && df$Sentiment <= 39){
-      df$weight=-1
-      df$sentiment_keyword="NEGATIVE"
-    }else if(df$Sentiment >=40 && df$Sentiment <= 49){
-      df$weight=0
-      df$sentiment_keyword="NEUTRAL"
-    }else {
-      df$weight=1
-      df$sentiment_keyword="POSITIVE"
-    }
+    
+    # if (df$Sentiment >=0 && df$Sentiment <= 39){
+    #   df$weight=-1
+    #   df$sentiment_keyword="NEGATIVE"
+    # }else if(df$Sentiment >=40 && df$Sentiment <= 49){
+    #   df$weight=0
+    #   df$sentiment_keyword="NEUTRAL"
+    # }else {
+    #   df$weight=1
+    #   df$sentiment_keyword="POSITIVE"
+    # }
     
     df$mscore = df$`Favorite Count` + (df$`Reply Count`* df$Sentiment * df$weight) + df$`Retweet Count`
   }
   
+  View(df)
   return (df)
   
 }
