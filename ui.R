@@ -19,15 +19,16 @@ dashboardPage(
                    sidebarMenu(
                      #menuItem("Upload Input Files", tabName = "upload", icon = icon("upload")),
                      menuItem("Summary", tabName = "summary", icon = icon("th")),
-                     menuItem("Influencer Drill Down", tabName = "influencer", icon = icon("user-circle-o")),
-                     menuItem("Post Drill Down", tabName = "post_drill_down", icon = icon("address-card-o"))
-                   )
+                     menuItem("Post Drill Down", tabName = "post_drill_down", icon = icon("address-card-o")),
+                     menuItem("Influencer Drill Down", tabName = "influencer", icon = icon("user-circle-o"))
+                     
+                     )
   ),
   dashboardBody(
-    # tags$style(type="text/css",
-    #            ".shiny-output-error { visibility: hidden; }",
-    #            ".shiny-output-error:before { visibility: hidden; }"
-    # ),
+    tags$style(type="text/css",
+               ".shiny-output-error { visibility: hidden; }",
+               ".shiny-output-error:before { visibility: hidden; }"
+    ),
     tags$head(tags$style(HTML('
                               /* logo */
                               .skin-blue .main-header .logo {
@@ -127,9 +128,10 @@ dashboardPage(
               fluidRow(
                 column(4,h3(strong("MARKET TREND"),style = "color: #BE9200;")),
                 #column(3,selectInput("Type", "Type", choices = c("reach"))),
-                column(3,uiOutput('select_metric')),
-                column(3,uiOutput('select_week')),
-                column(2,uiOutput('select_year'))
+                column(offset=2,3,uiOutput('select_metric')),
+                #column(3,uiOutput('select_week')),
+                column(3,htmlOutput("market_daterange_selector"))
+                #column(2,uiOutput('select_year'))
               ), 
               
               #h2(textOutput("influencer_image_url")),
@@ -139,10 +141,11 @@ dashboardPage(
               
               
               fluidRow(
-                column(6, h3(strong("POST SUMMARY"),style = "color: #BE9200;")),
+                column(4, h3(strong("POST SUMMARY"),style = "color: #BE9200;")),
                 column(2,uiOutput('select_market')),
                 column(2,uiOutput('select_month')),
-                column(2,uiOutput('select_year_ps'))
+                column(2,uiOutput('select_year_ps')),
+                column(2,downloadButton("downloadData", "Export"))
               ),
               DT::dataTableOutput('post_summary_table'),
               
@@ -170,23 +173,63 @@ dashboardPage(
               
               
       ),
+      tabItem(tabName = "post_drill_down",
+              
+              fluidRow(
+                column(2,h3(strong("MOST RECENT POSTS"),style = "color: #BE9200;")),
+                column(offset=5,2,uiOutput('market_mostrecentposts')),
+                column(2,uiOutput('period_mostrecentposts')),
+                column(1,uiOutput('type_mostrecentposts'))
+                
+              ),
+              # tags$head(tags$style("#table1  {wrap;  }")),
+              
+              DT::dataTableOutput('most_recent_post_table'), br(),br(),
+              fluidRow(
+                #column(1,h6(strong("show"))),
+                column(1,offset=5,uiOutput('select_entries_mrp')),
+                column(2,uiOutput('select_infleuncer_mrp')),
+                column(2,uiOutput('select_metric_mrp')),
+                column(1,uiOutput('select_month_mrp')),
+                column(1,uiOutput('select_year_mrp'))
+              ),
+              br(),
+              uiOutput("dynamic_UI_box")
+              # fluidRow(
+              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300)),
+              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300)),
+              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300))
+              # ),
+              # fluidRow(
+              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300)),
+              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300)),
+              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300))
+              # )
+              
+      ),
       tabItem(tabName = "influencer",
               #h3("WEEKLY TOPLINE",style = "font-family: 'Lobster', cursive;font-weight: 500; line-height: 1.1; color: #4d3a7d;")
-              h3(strong("INFLUENCER UNIVERSE"),style = "color: #BE9200;"),
+              fluidRow(
+                column(2,h3(strong("INFLUENCER UNIVERSE"),style = "color: #BE9200;")),
+                column(offset=5,3,uiOutput("select_daterange_inf")),
+                column(2,uiOutput("select_metric_inf"))
+              ),
+                
               useShinyjs(),
               #uiOutput("infleuncerImage2", height = 300),
               #tags$div(id = 'placeholder') 
               # tags$head(
+              
               tags$style(HTML("
-                    .round {
+                              .round {
                               display:block;
                               height: 160px;
                               width: 160px;
                               border-radius: 100%;
                               border: 1px black;
-
+                              
                               }
-
+                              
                               ")),
               fluidRow(
                 
@@ -312,39 +355,7 @@ dashboardPage(
               DT::dataTableOutput('top_comments_table')
               
               
-      ),
-      
-      tabItem(tabName = "post_drill_down",
-              h3(strong("MOST RECENT POSTS"),style = "color: #BE9200;"),
-              # tags$head(tags$style("#table1  {wrap;  }")),
-              
-              DT::dataTableOutput('most_recent_post_table'), br(),br(),
-              fluidRow(
-                #column(1,h6(strong("show"))),
-                column(1,offset=5,uiOutput('select_entries_mrp')),
-                column(2,uiOutput('select_infleuncer_mrp')),
-                column(2,uiOutput('select_metric_mrp')),
-                column(1,uiOutput('select_month_mrp')),
-                column(1,uiOutput('select_year_mrp'))
-              ),
-              br(),
-              uiOutput("dynamic_UI_box")
-              # fluidRow(
-              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300)),
-              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300)),
-              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300))
-              # ),
-              # fluidRow(
-              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300)),
-              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300)),
-              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300))
-              # )
-              
-              
-              
-              
-              
-      )
+              )
       
       
       
