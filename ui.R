@@ -141,25 +141,30 @@ dashboardPage(
               
               
               fluidRow(
-                column(4, h3(strong("POST SUMMARY"),style = "color: #BE9200;")),
-                column(2,uiOutput('select_market')),
+                column(2, h3(strong("POST SUMMARY"),style = "color: #BE9200;")),
+                #column(2,downloadButton("downloadData", "Export")),
+                column(offset=2,2,uiOutput('select_market')),
                 column(2,uiOutput('select_month')),
                 column(2,uiOutput('select_year_ps')),
-                column(2,downloadButton("downloadData", "Export"))
+                column(2,downloadButton("downloadData", "Export")),
+                #tags$style(type='text/css', "#select_market { width:100%; margin-top: 25px;}"),
+                tags$style(type='text/css', "#downloadData { width:100%; margin-top: 20px;}")
               ),
               DT::dataTableOutput('post_summary_table'),
               
               fluidRow(
-                column(6, h3(strong("RESPONSE COMMENTS"),style = "color: #BE9200;")),
+                column(4, h3(strong("RESPONSE COMMENTS"),style = "color: #BE9200;")),
                 column(3,uiOutput('select_platform')),
                 #column(3,htmlOutput("daterange_selector"))
                 column(3,dateRangeInput('dateRange',
                                label = '',
                                start = Sys.Date(), end = Sys.Date() + 6
-                ))
+                )),
+                column(2,downloadButton("downloadData_responsecomments", "Export")),
+                tags$style(type='text/css', "#downloadData_responsecomments { width:100%; margin-top: 20px;}")
                 
               ),
-              DT::dataTableOutput('test_table')
+              DT::dataTableOutput('response_comments_table')
               
               # h3(strong("WEEKLY TREND"),style = "color: #BE9200;"),
               # 
@@ -177,10 +182,11 @@ dashboardPage(
               
               fluidRow(
                 column(2,h3(strong("MOST RECENT POSTS"),style = "color: #BE9200;")),
-                column(offset=5,2,uiOutput('market_mostrecentposts')),
-                column(2,uiOutput('period_mostrecentposts')),
-                column(1,uiOutput('type_mostrecentposts'))
-                
+                column(offset=3,2,uiOutput('market_mostrecentposts')),
+                column(3,uiOutput('period_mostrecentposts')),
+                #column(1,uiOutput('type_mostrecentposts')),
+                column(2,downloadButton("downloadData_postdrilldown", "Export")),
+                tags$style(type='text/css', "#downloadData_postdrilldown { width:100%; margin-top: 20px;}")
               ),
               # tags$head(tags$style("#table1  {wrap;  }")),
               
@@ -349,9 +355,17 @@ dashboardPage(
                 column(2,uiOutput('display_year'))
               ),
               plotlyOutput("historical_trend_chart"),
-              h3(strong(textOutput("title_sk2_post")),style = "color: #BE9200;"),
+              fluidRow(
+                column(4,h3(strong(textOutput("title_sk2_post")),style = "color: #BE9200;")),
+                column(offset=10,2,downloadButton("downloadData_sk2posts", "Export")),
+                tags$style(type='text/css', "#downloadData_sk2posts { width:100%; margin-top: 20px;}")
+              ),
               DT::dataTableOutput('sk2_posts_table'),
-              h3(strong(textOutput("title_top_comments")),style = "color: #BE9200;"),
+              fluidRow(
+                column(2,h3(strong(textOutput("title_top_comments")),style = "color: #BE9200;")),
+                column(offset=10,2,downloadButton("downloadData_topcomments", "Export")),
+                tags$style(type='text/css', "#downloadData_topcomments { width:100%; margin-top: 20px;}")
+              ),
               DT::dataTableOutput('top_comments_table')
               
               

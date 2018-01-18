@@ -5,6 +5,8 @@
 # unique_markets =  unique(as.character(lapply(strsplit(as.character(FB_Post_Data$Label1), split="_"),tail, n=1)))
 options(shiny.maxRequestSize = 30*1024^2)
 
+Sys.setlocale(category = "LC_CTYPE", locale = "chs")
+
 reactive_TW_Post_Data <<-
   read_excel("data/japan_data.xlsx", sheet = "TW Post Data")
 
@@ -159,6 +161,8 @@ server=shinyServer(function(input, output, session){
       if (input$typeofposts_ht=='SK-II Posts'){
         get_sk2_data = get_sk2_data()
         
+        get_sk2_data_dataframe <<- get_sk2_data
+        
         # print("nrow(get_sk2_data) from this")
         # print (length(get_sk2_data))
         #DT::datatable(get_sk2_data,escape=F, options = list(pageLength = 5,searching = FALSE))
@@ -279,6 +283,7 @@ server=shinyServer(function(input, output, session){
     most_recent_posts$`M-SCORE`                 = format(most_recent_posts$`M-SCORE`,big.mark=",",scientific=FALSE)
     
     #View(most_recent_posts)
+    most_recent_posts_data <<- most_recent_posts
     DT::datatable(most_recent_posts,escape=F, options = list(scrollX = TRUE,pageLength = 6,searching = FALSE,columnDefs = list(list(
       targets = 3,
       render = JS(
@@ -330,6 +335,8 @@ server=shinyServer(function(input, output, session){
       }
       # View(data)
       # data=data[complete.cases(data), ]
+      
+      top_comments_data <<- data
       DT::datatable(data,escape=F, options = list(
         language = list(
           zeroRecords = "No records to display for the selected filter! Please change the filter options and try again."),
@@ -2314,7 +2321,7 @@ server=shinyServer(function(input, output, session){
   
   
   output$barplot_markettrend <- renderPlotly({
-    
+    View(test_data)
     require(input$metric_mt)
     
     
@@ -2997,7 +3004,7 @@ server=shinyServer(function(input, output, session){
     title
   })
   
-  output$test_table <-  DT::renderDataTable({
+  output$response_comments_table <-  DT::renderDataTable({
     
     #print (paste(as.character(input$dateRange)))
     
@@ -3081,6 +3088,8 @@ server=shinyServer(function(input, output, session){
     names(data)=c("KOL NAME","DATE","POST DESC","COMMENT","TYPE","SENTIMENT","POST")  
     data <- data[c("DATE","KOL NAME","POST","POST DESC","SENTIMENT","TYPE","COMMENT")]
     #View(data)
+    
+    response_comments_data <<- data
     DT::datatable(data,escape=F, options = list(scrollX = TRUE,language = list(
       zeroRecords = "No records to display for the selected filter! Please change the filter options and try again.")  ,pageLength = 10,searching = FALSE,columnDefs = list(list(
         targets = 4,
@@ -3282,7 +3291,7 @@ server=shinyServer(function(input, output, session){
     consolidated_data$ENGAGEMENT = format(consolidated_data$ENGAGEMENT,big.mark=",",scientific=FALSE)
     consolidated_data$`ENGAGEMENT RATE` = format(consolidated_data$`ENGAGEMENT RATE`,big.mark=",",scientific=FALSE)
     consolidated_data$`M-SCORE` = format(consolidated_data$`M-SCORE`,big.mark=",",scientific=FALSE)
-    
+    post_summary_export_data <<- consolidated_data
     # library(googleLanguageR)
     # path = "/Users/suteja.kanuri/Documents/MC/video_intel_api/youtube_API/donotdelete/servicekey.json"
     # 
@@ -3320,6 +3329,58 @@ server=shinyServer(function(input, output, session){
     
     
   })
+  
+  output$downloadData <- downloadHandler(
+    filename = "post_summary.xlsx",
+    content = function(file) {
+      
+      # validate(
+      #   need(is.null(post_summary_export_data), "No data present.")
+      # )
+      
+      if(nrow(post_summary_export_data)!=0){
+        write.xlsx(post_summary_export_data, file, row.names = FALSE,Encoding = "UTF-8")
+      }
+    }
+  )
+  
+  output$downloadData_responsecomments <- downloadHandler(
+    filename = "response_comments.xlsx",
+    content = function(file) {
+      if(nrow(response_comments_data)!=0){
+        write.xlsx(response_comments_data, file, row.names = FALSE,Encoding = "UTF-8")
+      }
+    }
+  )
+  
+  output$downloadData_postdrilldown <- downloadHandler(
+    filename = "post_data.xlsx",
+    content = function(file) {
+      if(nrow(most_recent_posts_data)!=0){
+        write.xlsx(most_recent_posts_data, file, row.names = FALSE,Encoding = "UTF-8")
+      }
+    }
+  )
+  
+  
+  output$downloadData_sk2posts <- downloadHandler(
+    filename = "sk2_post_data.xlsx",
+    content = function(file) {
+      if(nrow(get_sk2_data_dataframe)!=0){
+        write.xlsx(get_sk2_data_dataframe, file, row.names = FALSE,Encoding = "UTF-8")
+      }
+    }
+  )
+  
+  
+  output$downloadData_topcomments <- downloadHandler(
+    filename = "top_comments.xlsx",
+    content = function(file) {
+      if(nrow(top_comments_data)!=0){
+        write.xlsx(top_comments_data, file, row.names = FALSE,Encoding = "UTF-8")
+      }
+    }
+  )
   
   
   

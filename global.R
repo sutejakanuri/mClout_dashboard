@@ -1,12 +1,15 @@
 library(plotly)
 #library(rCharts)
 library(dplyr)
-#require(xlsx)
+#library(xlsx)
+#library(rJava)
 library(lubridate)
 library(shinyBS)
 library(shinyjs)
 library(readxl)
 library(DT)
+library(openxlsx)
+
 
 
 ####################################################
