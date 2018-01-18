@@ -215,77 +215,131 @@ server=shinyServer(function(input, output, session){
     # FB_Post_Data = select(FB_Post_Data,Date,post_text,Name,platform,post_impressions_unique,Engagement,Likes,mscore,post_image)
     # names(FB_Post_Data) = c("DATE", "POST", "KOL", "PLATFORM","REACH","ENGAGEMENT","REACTIONS","M-SCORE","URL")
     
+
+    start_date =  unlist(strsplit(reactive_mostrecentposts_daterange(),split='|',fixed=TRUE))[1]
+    end_date =  unlist(strsplit(reactive_mostrecentposts_daterange(),split='|',fixed=TRUE))[2]
     
     TW_Post_Data  = reactive_TW_Post_Data
     TW_Post_Data = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==TRUE,]
-    TW_Post_Data = add_mscore(TW_Post_Data,"TW")
-    TW_Post_Data$Engagement=  TW_Post_Data["Reply Count"] + TW_Post_Data["Favorite Count"] + TW_Post_Data["Retweet Count"]
-    TW_Post_Data=as.data.frame(TW_Post_Data)
-    TW_Post_Data$platform = "TWITTER"
-    TW_Post_Data$Engagement = TW_Post_Data$Engagement$`Reply Count`
-    
+    if(nrow(TW_Post_Data)!=0){
+      print("end of this")
+      TW_Post_Data$Date=gsub("/", "-", TW_Post_Data$Date)
+      TW_Post_Data$Date = dmy(TW_Post_Data$Date)
+      TW_Post_Data = subset(TW_Post_Data, TW_Post_Data$Date>=start_date & TW_Post_Data$Date <=end_date)
+      if(nrow(TW_Post_Data)!=0){
+        print("end of this")
+        TW_Post_Data$Date=gsub("-", "/", TW_Post_Data$Date)
+        TW_Post_Data$Date=format(as.Date(TW_Post_Data$Date), "%d/%m/%Y")
+        TW_Post_Data = add_mscore(TW_Post_Data,"TW")
+        TW_Post_Data$Engagement=  TW_Post_Data["Reply Count"] + TW_Post_Data["Favorite Count"] + TW_Post_Data["Retweet Count"]
+        TW_Post_Data=as.data.frame(TW_Post_Data)
+        TW_Post_Data$platform = "TWITTER"
+        TW_Post_Data$Engagement = TW_Post_Data$Engagement$`Reply Count`
+      }
+    }
+    print("end of this")
     #TW_Post_Data$reach = 0
     # TW_Post_Data = select(TW_Post_Data,Date,Text,Username,platform,reach,Engagement,`Favorite Count`,sentiment_keyword,mscore,`Post Image`)
     # TW_Post_Data$Engagement = TW_Post_Data$Engagement$`Reply Count`
     # names(TW_Post_Data) = c("DATE", "POST", "KOL", "PLATFORM","REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","URL")
     TW_Page_Data = reactive_TW_Page_Data
-    TW_EER = add_EER(TW_Page_Data,TW_Post_Data,"TW")
-    TW_Post_Data = merge(TW_Post_Data,TW_EER)
-    TW_Post_Data = select(TW_Post_Data,Date,Text,Username,platform,
-                          Earned_Effective_Reach,Engagement,`Favorite Count`,sentiment_keyword,mscore,`Post Image`,URL)
-    names(TW_Post_Data) = c("DATE", "POST", "KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","URL","POST_URL")
+    
+    TW_Page_Data$Date=gsub("/", "-", TW_Page_Data$Date)
+    TW_Page_Data$Date = dmy(TW_Page_Data$Date)
+    
+    TW_Page_Data = subset(TW_Page_Data, TW_Page_Data$Date>=start_date & TW_Page_Data$Date <=end_date)
+    if(nrow(TW_Page_Data)!=0){
+      TW_Page_Data$Date=gsub("-", "/", TW_Page_Data$Date)
+      TW_Page_Data$Date=format(as.Date(TW_Page_Data$Date), "%d/%m/%Y")
+      
+      TW_EER = add_EER(TW_Page_Data,TW_Post_Data,"TW")
+      TW_Post_Data = merge(TW_Post_Data,TW_EER)
+      TW_Post_Data = select(TW_Post_Data,Date,Text,Type,Username,platform,
+                            Earned_Effective_Reach,Engagement,`Favorite Count`,sentiment_keyword,mscore,`Post Image`,Views,URL)
+      
+      names(TW_Post_Data) = c("DATE", "POST","TYPE", "KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","URL","VIEWS","POST_URL")
+      print("1")
+      TW_Post_Data$VIEWS[is.na(TW_Post_Data$VIEWS)] <- "-"
+    }
     
     IG_Post_Data  = reactive_IG_Post_Data
     IG_Post_Data = IG_Post_Data[grepl("sk2", IG_Post_Data$Label1)==TRUE,]
-    IG_Post_Data = add_mscore(IG_Post_Data,"IG")
-    IG_Post_Data$platform="INSTAGRAM"
+    
+    if(nrow(IG_Post_Data)!=0){
+      IG_Post_Data$Date=gsub("/", "-", IG_Post_Data$Date)
+      IG_Post_Data$Date = dmy(IG_Post_Data$Date)
+      IG_Post_Data = subset(IG_Post_Data, IG_Post_Data$Date>=start_date & IG_Post_Data$Date <=end_date)
+      if(nrow(IG_Post_Data)!=0){
+        IG_Post_Data$Date=gsub("-", "/", IG_Post_Data$Date)
+        IG_Post_Data$Date=format(as.Date(IG_Post_Data$Date), "%d/%m/%Y")
+    
+        IG_Post_Data = add_mscore(IG_Post_Data,"IG")
+        IG_Post_Data$platform="INSTAGRAM"
+      }
+    }
     
     IG_Page_Data = reactive_IG_Page_Data
-    IG_EER = add_EER(IG_Page_Data,IG_Post_Data,"IG")
-    IG_Post_Data = merge(IG_Post_Data,IG_EER)
-    IG_Post_Data = select(IG_Post_Data,Date,Caption,Username,platform,Earned_Effective_Reach,Engagement,Likes,sentiment_keyword,mscore,`Media URL`,Media)
-    names(IG_Post_Data) = c("DATE", "POST", "KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","URL","POST_URL")
-    # IG_Post_Data$reach=0
-    # IG_Post_Data = select(IG_Post_Data,Date,Caption,Username,platform,reach,Engagement,Likes,sentiment_keyword,mscore,`Media URL`)
-    # names(IG_Post_Data) = c("DATE", "POST", "KOL", "PLATFORM","REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","URL")
+    IG_Page_Data$Date=gsub("/", "-", IG_Page_Data$Date)
+    IG_Page_Data$Date = dmy(IG_Page_Data$Date)
     
-    most_recent_posts = rbind(TW_Post_Data,IG_Post_Data)
-    #most_recent_posts = floor(most_recent_posts$`EARNED EFFECTIVE REACH`)
-    
-    most_recent_posts$`EARNED EFFECTIVE REACH`[(most_recent_posts$`EARNED EFFECTIVE REACH` - floor(most_recent_posts$`EARNED EFFECTIVE REACH`)) <.5]  = floor(most_recent_posts$`EARNED EFFECTIVE REACH`[(most_recent_posts$`EARNED EFFECTIVE REACH` - floor(most_recent_posts$`EARNED EFFECTIVE REACH`)) < .5])
-    most_recent_posts$`EARNED EFFECTIVE REACH`[(most_recent_posts$`EARNED EFFECTIVE REACH` - floor(most_recent_posts$`EARNED EFFECTIVE REACH`)) >= .5]= ceiling(most_recent_posts$`EARNED EFFECTIVE REACH`[(most_recent_posts$`EARNED EFFECTIVE REACH` - floor(most_recent_posts$`EARNED EFFECTIVE REACH`)) >= .5])
-    
-    height = " width=\"52\" height=\"52\"></img>"
-    
-    most_recent_posts$picture_str = paste0("\"",most_recent_posts$URL,"\"")
-    
-    #most_recent_posts$IMAGE = paste("<a href=",most_recent_posts$POST_URL ,"><img class='img-circle' src=",most_recent_posts$picture_str,height)
-    most_recent_posts$IMAGE = paste("<a href=",most_recent_posts$POST_URL ,"target=_blank","><img src=",most_recent_posts$picture_str,height)
-    most_recent_posts$URL = NULL
-    most_recent_posts$picture_str=NULL
-    most_recent_posts$POST_URL=NULL
-    names(most_recent_posts)=c("DATE", "DESCRIPTION", "KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","POST")
-    
-    most_recent_posts=add_logo(most_recent_posts)
-    most_recent_posts$PLATFORM = NULL
-    names(most_recent_posts)=c("DATE", "DESCRIPTION", "KOL", "EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","POST","PLATFORM")
-    most_recent_posts <- most_recent_posts[,c("DATE", "POST", "DESCRIPTION","KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE")]
+    IG_Page_Data = subset(IG_Page_Data, IG_Page_Data$Date>=start_date & IG_Page_Data$Date <=end_date)
+    if(nrow(IG_Page_Data)!=0){
+      IG_Page_Data$Date=gsub("-", "/", IG_Page_Data$Date)
+      IG_Page_Data$Date=format(as.Date(IG_Page_Data$Date), "%d/%m/%Y")
+      
+      IG_EER = add_EER(IG_Page_Data,IG_Post_Data,"IG")
+      IG_Post_Data = merge(IG_Post_Data,IG_EER)
+      IG_Post_Data = select(IG_Post_Data,Date,Caption,Type,Username,platform,Earned_Effective_Reach,Engagement,Likes,sentiment_keyword,mscore,`Media URL`,Views,Media)
+      names(IG_Post_Data) = c("DATE", "POST","TYPE", "KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","URL","VIEWS","POST_URL")
+      print("2")
+      IG_Post_Data$VIEWS[is.na(IG_Post_Data$VIEWS)] <- "-"
+    }
     
     
-    most_recent_posts$DATE=gsub("/", "-", most_recent_posts$DATE)
-    most_recent_posts$DATE=dmy(most_recent_posts$DATE)
-    most_recent_posts=most_recent_posts[ order(most_recent_posts$DATE , decreasing = TRUE ),]
-    most_recent_posts$DATE=gsub("-", "/", most_recent_posts$DATE)
+    if(nrow(TW_Post_Data)!=0 & nrow(IG_Post_Data)!=0){
+      most_recent_posts = rbind(TW_Post_Data,IG_Post_Data)
+    }else if(nrow(TW_Post_Data)==0 & nrow(IG_Post_Data)==0){
+      most_recent_posts = data.frame(matrix(ncol=12,nrow=0))
+      names(most_recent_posts)=c("DATE", "POST", "TYPE","DESCRIPTION","KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","VIEWS","M-SCORE")
+    }else if(nrow(TW_Post_Data)==0){
+      most_recent_posts = IG_Post_Data
+    }else if(nrow(IG_Post_Data)==0){
+      most_recent_posts = TW_Post_Data
+    }
     
-    most_recent_posts$`EARNED EFFECTIVE REACH`  = format(most_recent_posts$`EARNED EFFECTIVE REACH`,big.mark=",",scientific=FALSE)
-    most_recent_posts$ENGAGEMENT                = format(most_recent_posts$ENGAGEMENT,big.mark=",",scientific=FALSE)
-    most_recent_posts$REACTIONS                 = format(most_recent_posts$REACTIONS,big.mark=",",scientific=FALSE)
-    most_recent_posts$`M-SCORE`                 = format(most_recent_posts$`M-SCORE`,big.mark=",",scientific=FALSE)
-    
+    if(nrow(most_recent_posts)!=0){
+      most_recent_posts$`EARNED EFFECTIVE REACH`[(most_recent_posts$`EARNED EFFECTIVE REACH` - floor(most_recent_posts$`EARNED EFFECTIVE REACH`)) <.5]  = floor(most_recent_posts$`EARNED EFFECTIVE REACH`[(most_recent_posts$`EARNED EFFECTIVE REACH` - floor(most_recent_posts$`EARNED EFFECTIVE REACH`)) < .5])
+      most_recent_posts$`EARNED EFFECTIVE REACH`[(most_recent_posts$`EARNED EFFECTIVE REACH` - floor(most_recent_posts$`EARNED EFFECTIVE REACH`)) >= .5]= ceiling(most_recent_posts$`EARNED EFFECTIVE REACH`[(most_recent_posts$`EARNED EFFECTIVE REACH` - floor(most_recent_posts$`EARNED EFFECTIVE REACH`)) >= .5])
+      height = " width=\"52\" height=\"52\"></img>"
+      most_recent_posts$picture_str = paste0("\"",most_recent_posts$URL,"\"")
+      
+      #most_recent_posts$IMAGE = paste("<a href=",most_recent_posts$POST_URL ,"><img class='img-circle' src=",most_recent_posts$picture_str,height)
+      most_recent_posts$IMAGE = paste("<a href=",most_recent_posts$POST_URL ,"target=_blank","><img src=",most_recent_posts$picture_str,height)
+      most_recent_posts$URL = NULL
+      most_recent_posts$picture_str=NULL
+      most_recent_posts$POST_URL=NULL
+      names(most_recent_posts)=c("DATE", "DESCRIPTION", "TYPE","KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","VIEWS","POST")
+      
+      most_recent_posts=add_logo(most_recent_posts)
+      most_recent_posts$PLATFORM = NULL
+      names(most_recent_posts)=c("DATE", "DESCRIPTION","TYPE", "KOL", "EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","VIEWS","POST","PLATFORM")
+      most_recent_posts <- most_recent_posts[,c("DATE", "POST","TYPE", "DESCRIPTION","KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","VIEWS","M-SCORE")]
+      
+      
+      most_recent_posts$DATE=gsub("/", "-", most_recent_posts$DATE)
+      most_recent_posts$DATE=dmy(most_recent_posts$DATE)
+      most_recent_posts=most_recent_posts[ order(most_recent_posts$DATE , decreasing = TRUE ),]
+      most_recent_posts$DATE=gsub("-", "/", most_recent_posts$DATE)
+      
+      most_recent_posts$`EARNED EFFECTIVE REACH`  = format(most_recent_posts$`EARNED EFFECTIVE REACH`,big.mark=",",scientific=FALSE)
+      most_recent_posts$ENGAGEMENT                = format(most_recent_posts$ENGAGEMENT,big.mark=",",scientific=FALSE)
+      most_recent_posts$REACTIONS                 = format(most_recent_posts$REACTIONS,big.mark=",",scientific=FALSE)
+      most_recent_posts$`M-SCORE`                 = format(most_recent_posts$`M-SCORE`,big.mark=",",scientific=FALSE)
+    }
     #View(most_recent_posts)
     most_recent_posts_data <<- most_recent_posts
     DT::datatable(most_recent_posts,escape=F, options = list(scrollX = TRUE,pageLength = 6,searching = FALSE,columnDefs = list(list(
-      targets = 3,
+      targets = 4,
       render = JS(
         "function(data, type, row, meta) {",
         "return type === 'display' && data.length > 6 ?",
@@ -311,7 +365,7 @@ server=shinyServer(function(input, output, session){
     
   }  )
   
-  
+  #vihag
   
   
   
@@ -1525,7 +1579,6 @@ server=shinyServer(function(input, output, session){
       end_date =  unlist(strsplit(reactive_summary_daterange(),split='|',fixed=TRUE))[2]
       IG_Post_Data$Date=gsub("/", "-", IG_Post_Data$Date)
       IG_Post_Data$Date = dmy(IG_Post_Data$Date)
-      print (IG_Post_Data$Date)
       IG_Post_Data = subset(IG_Post_Data, IG_Post_Data$Date>=start_date & IG_Post_Data$Date <=end_date)
     }
     
@@ -3138,6 +3191,11 @@ server=shinyServer(function(input, output, session){
   
   reactive_inf_daterange<<-reactive({
     return (paste ( as.character(input$select_daterange_inf[1]),"|", as.character(input$select_daterange_inf[2]) , sep=""))
+  })
+  
+  
+  reactive_mostrecentposts_daterange<<-reactive({
+    return (paste ( as.character(input$period_mostrecentposts[1]),"|", as.character(input$period_mostrecentposts[2]) , sep=""))
   })
   
   reactive_return_start_date<<-reactive({
