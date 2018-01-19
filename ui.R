@@ -357,7 +357,8 @@ dashboardPage(
               plotlyOutput("historical_trend_chart"),
               fluidRow(
                 column(4,h3(strong(textOutput("title_sk2_post")),style = "color: #BE9200;")),
-                column(offset=10,2,downloadButton("downloadData_sk2posts", "Export")),
+                column(offset=4,2,uiOutput('display_typeofpost_post')),
+                column(2,downloadButton("downloadData_sk2posts", "Export")),
                 tags$style(type='text/css', "#downloadData_sk2posts { width:100%; margin-top: 20px;}")
               ),
               DT::dataTableOutput('sk2_posts_table'),

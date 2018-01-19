@@ -225,7 +225,7 @@ add_EER <- function(Page_Data,Post_Data,platform){
     df$Day.y = NULL
     names(df)[4] = "Day"
     names(df)[17] = "Followers"
-    df=select(df, Date, Text, Username,`Engagement Rate`,sentiment_keyword,mscore,`Post Image`,`Reply Count`,`Favorite Count`,`Retweet Count`,Earned_Effective_Reach,`Media Url`)
+    df=select(df, Date, Text, Username,`Engagement Rate`,sentiment_keyword,mscore,`Post Image`,`Reply Count`,`Favorite Count`,`Retweet Count`,Earned_Effective_Reach,`Media Url`,Views,Type)
   }
   if (platform == "IG"){
     Page_Data["Earned_Effective_Reach"] = 0.035 * Page_Data["Followers"] 
@@ -237,11 +237,11 @@ add_EER <- function(Page_Data,Post_Data,platform){
     
     if(nrow(Post_Data_image_df)!=0 & nrow(Page_Data)!=0){
       Post_Data_image_df=merge(Post_Data_image_df,Page_Data, by  = c("Username","Date"))
-      Post_Data_image_df = select(Post_Data_image_df,Username,Date,Caption,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Earned_Effective_Reach,Media )
+      Post_Data_image_df = select(Post_Data_image_df,Username,Date,Caption,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Earned_Effective_Reach,Media,Views,Type)
       Post_Data_video_df = Post_Data[(grepl("video", Post_Data$Type)==TRUE),]
       #View(Post_Data_video_df)
       Post_Data_video_df["Earned_Effective_Reach"] = 0.25 * Post_Data_video_df["Views"] 
-      Post_Data_video_df = select(Post_Data_video_df,Username,Date,Caption,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Earned_Effective_Reach,Media )
+      Post_Data_video_df = select(Post_Data_video_df,Username,Date,Caption,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Earned_Effective_Reach,Media,Views,Type )
       
       IG_Post_Data_sk2 = rbind(Post_Data_image_df,Post_Data_video_df)
       df=IG_Post_Data_sk2
@@ -356,4 +356,17 @@ add_logo <- function(df){
   # df <- df[,c("DATE", "POST", "DESCRIPTION","KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE")]
   
   
+}
+sainsbury_total <<- function(x,y){
+  
+}
+
+sainsburry <<- function(df){
+  
+  total_reach=sum(df$Earned_Effective_Reach)
+  df["total_reach"] = total_reach
+  df["sainsburry"] = (df$Earned_Effective_Reach*20/100)
+  df["result"] = df["total_reach"] - df["sainsburry"]
+  sainsburry_value = total_reach - prod(df["result"] )
+  return(sainsburry_value)
 }
