@@ -128,9 +128,9 @@ dashboardPage(
               fluidRow(
                 column(4,h3(strong("MARKET TREND"),style = "color: #BE9200;")),
                 #column(3,selectInput("Type", "Type", choices = c("reach"))),
-                column(offset=2,3,uiOutput('select_metric')),
+                column(offset=6,2,uiOutput('select_metric'))
                 #column(3,uiOutput('select_week')),
-                column(3,htmlOutput("market_daterange_selector"))
+                #column(3,htmlOutput("market_daterange_selector"))
                 #column(2,uiOutput('select_year'))
               ), 
               
@@ -143,9 +143,9 @@ dashboardPage(
               fluidRow(
                 column(2, h3(strong("POST SUMMARY"),style = "color: #BE9200;")),
                 #column(2,downloadButton("downloadData", "Export")),
-                column(offset=2,2,uiOutput('select_market')),
-                column(2,uiOutput('select_month')),
-                column(2,uiOutput('select_year_ps')),
+                column(offset=6,2,uiOutput('select_market')),
+                #column(2,uiOutput('select_month')),
+                #column(2,uiOutput('select_year_ps')),
                 column(2,downloadButton("downloadData", "Export")),
                 #tags$style(type='text/css', "#select_market { width:100%; margin-top: 25px;}"),
                 tags$style(type='text/css', "#downloadData { width:100%; margin-top: 20px;}")
@@ -153,13 +153,13 @@ dashboardPage(
               DT::dataTableOutput('post_summary_table'),
               
               fluidRow(
-                column(4, h3(strong("RESPONSE COMMENTS"),style = "color: #BE9200;")),
-                column(3,uiOutput('select_platform')),
+                column(2, h3(strong("RESPONSE COMMENTS"),style = "color: #BE9200;")),
+                column(offset=6,2,uiOutput('select_platform')),
                 #column(3,htmlOutput("daterange_selector"))
-                column(3,dateRangeInput('dateRange',
-                               label = '',
-                               start = Sys.Date(), end = Sys.Date() + 6
-                )),
+                # column(3,dateRangeInput('dateRange',
+                #                label = '',
+                #                start = Sys.Date(), end = Sys.Date() + 6
+                # )),
                 column(2,downloadButton("downloadData_responsecomments", "Export")),
                 tags$style(type='text/css', "#downloadData_responsecomments { width:100%; margin-top: 20px;}")
                 
@@ -193,11 +193,11 @@ dashboardPage(
               DT::dataTableOutput('most_recent_post_table'), br(),br(),
               fluidRow(
                 #column(1,h6(strong("show"))),
-                column(1,offset=5,uiOutput('select_entries_mrp')),
+                column(1,offset=7,uiOutput('select_entries_mrp')),
                 column(2,uiOutput('select_infleuncer_mrp')),
-                column(2,uiOutput('select_metric_mrp')),
-                column(1,uiOutput('select_month_mrp')),
-                column(1,uiOutput('select_year_mrp'))
+                column(2,uiOutput('select_metric_mrp'))
+                #column(1,uiOutput('select_month_mrp')),
+                #column(1,uiOutput('select_year_mrp'))
               ),
               br(),
               uiOutput("dynamic_UI_box")
