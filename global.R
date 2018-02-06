@@ -147,26 +147,67 @@ get_EER_instagram <- function(IG_Page_Data ,IG_Post_Data){
   
   IG_Page_Data["Earned_Effective_Reach"] = 0.035 * IG_Page_Data["Followers"] 
   IG_Post_Data_image_df = IG_Post_Data[grepl("image|carousel", IG_Post_Data$Type)==TRUE,]
-  IG_Post_Data_image_df=merge(IG_Post_Data_image_df,IG_Page_Data, by  = c("Username","Date"))
-  IG_Post_Data_image_df = IG_Post_Data_image_df[,c("Date","Earned_Effective_Reach" )]
+  if(nrow(IG_Post_Data_image_df)){
+    IG_Post_Data_image_df=merge(IG_Post_Data_image_df,IG_Page_Data, by  = c("Username","Date"))
+    if(nrow(IG_Post_Data_image_df)){
+      IG_Post_Data_image_df = IG_Post_Data_image_df[,c("Date","Earned_Effective_Reach" )]
+    }
+  }
+  
+  
   
   IG_Post_Data_video_df = IG_Post_Data[(grepl("video", IG_Post_Data$Type)==TRUE),]
-  IG_Post_Data_video_df["Earned_Effective_Reach"] = 0.25 * IG_Post_Data_video_df["Views"] 
-  IG_Post_Data_video_df = IG_Post_Data_video_df[,c("Date","Earned_Effective_Reach" )]
+  if(nrow(IG_Post_Data_video_df)){
+    IG_Post_Data_video_df["Earned_Effective_Reach"] = 0.25 * IG_Post_Data_video_df["Views"] 
+    if(nrow(IG_Post_Data_video_df)){
+      IG_Post_Data_video_df = IG_Post_Data_video_df[,c("Date","Earned_Effective_Reach" )]
+    }
+  }
   
-  IG_Post_Data_video_df=IG_Post_Data_video_df[, c("Date","Earned_Effective_Reach" )]
   
-  IG_Post_Data_sk2 = rbind(IG_Post_Data_image_df,IG_Post_Data_video_df)
-  return(IG_Post_Data_sk2)
+  if (nrow(IG_Post_Data_image_df)==0 & nrow(IG_Post_Data_video_df)==0){
+    df = data.frame(matrix(ncol = 5, nrow = 0))
+  }else if (nrow(IG_Post_Data_image_df)!=0 & nrow(IG_Post_Data_video_df)!=0){
+    df = rbind(IG_Post_Data_image_df,IG_Post_Data_video_df)
+  }else if(nrow(IG_Post_Data_image_df) == 0 & nrow(IG_Post_Data_video_df)!=0){
+    df = IG_Post_Data_video_df
+  }else if(nrow(IG_Post_Data_video_df) == 0 & nrow(IG_Post_Data_image_df)!=0){
+    df = IG_Post_Data_image_df
+  }
+  
+  return(df)
 }
 get_EER_twitter <- function(TW_Page_Data ,TW_Post_Data){
   
   TW_Page_Data["Earned_Effective_Reach"] = 0.054 * TW_Page_Data["Followers"] 
   TW_Post_Data_image_df = TW_Post_Data[grepl(paste(c("Link","Photo","Text"), collapse = "|"), TW_Post_Data$Type)==TRUE,]
-  TW_Post_Data_image_df=merge(TW_Post_Data_image_df,TW_Page_Data, by  = c("Username","Date"))
-  TW_Post_Data_image_df=TW_Post_Data_image_df[, c("Date","Earned_Effective_Reach" )]
+  if(nrow(TW_Post_Data_image_df)){
+    TW_Post_Data_image_df=merge(TW_Post_Data_image_df,TW_Page_Data, by  = c("Username","Date"))
+    if(nrow(TW_Post_Data_image_df)){
+      TW_Post_Data_image_df=TW_Post_Data_image_df[, c("Date","Earned_Effective_Reach" )]
+    }
+  }
   
-  return (TW_Post_Data_image_df)
+  TW_Post_Data_video_df = TW_Post_Data[grepl("Video", TW_Post_Data$Type)==TRUE,]
+  if (nrow(TW_Post_Data_video_df)!=0){
+    TW_Post_Data_video_df=merge(TW_Post_Data_video_df,TW_Page_Data, by  = c("Username","Date"))
+    if (nrow(TW_Post_Data_video_df)!=0){
+      TW_Post_Data_video_df$Earned_Effective_Reach=0.014 * TW_Post_Data_video_df$Views
+      TW_Post_Data_video_df=TW_Post_Data_video_df[, c("Date","Earned_Effective_Reach" )]      
+    }
+  }
+  
+  if (nrow(TW_Post_Data_image_df)==0 & nrow(TW_Post_Data_video_df)==0){
+    df = data.frame(matrix(ncol = 5, nrow = 0))
+  }else if (nrow(TW_Post_Data_image_df)!=0 & nrow(TW_Post_Data_video_df)!=0){
+    df = rbind(TW_Post_Data_image_df,TW_Post_Data_video_df)
+  }else if(nrow(TW_Post_Data_image_df) == 0 & nrow(TW_Post_Data_video_df)!=0){
+    df = TW_Post_Data_video_df
+  }else if(nrow(TW_Post_Data_video_df) == 0 & nrow(TW_Post_Data_image_df)!=0){
+    df = TW_Post_Data_image_df
+  }
+  
+  return (df)
 }
 
 get_stats_df_JP <- function (TW_Page_Data,IG_Page_Data,IG_summary_Data,infleuncer_name){
@@ -207,48 +248,95 @@ get_stats_df_JP <- function (TW_Page_Data,IG_Page_Data,IG_summary_Data,infleunce
   
 }
 add_EER <- function(Page_Data,Post_Data,platform){
+  print("in the method EER")
   if (platform == "TW"){
-    Page_Data["Earned_Effective_Reach"] = 0.054 * Page_Data["Followers"] 
+     
     Post_Data_image_df = Post_Data[grepl(paste(c("Link","Photo","Text"), collapse = "|"), Post_Data$Type)==TRUE,]
-    Post_Data_image_df=merge(Post_Data_image_df,Page_Data, by  = c("Username","Date"))
+    if(nrow(Post_Data_image_df)!=0){
+      Post_Data_image_df=merge(Post_Data_image_df,Page_Data, by  = c("Username","Date"),all.x = TRUE)
+      if(nrow(Post_Data_image_df)!=0){
+        names(Post_Data_image_df)[37] = "Followers"
+        Post_Data_image_df["Earned_Effective_Reach"] = 0.054 * Post_Data_image_df["Followers"]
+        Post_Data_image_df=select(Post_Data_image_df, Date, Text, Username,`Engagement Rate`,sentiment_keyword,mscore,`Post Image`,`Reply Count`,`Favorite Count`,`Retweet Count`,Earned_Effective_Reach,`Media Url`,Views,Type)
+        
+      }
+    }
     
     Post_Data_video_df = Post_Data[grepl("Video", Post_Data$Type)==TRUE,]
-    
-    Post_Data_video_df=merge(Post_Data_video_df,Page_Data, by  = c("Username","Date"))
     if (nrow(Post_Data_video_df)!=0){
-      Post_Data_video_df$Earned_Effective_Reach=0
-      df = rbind(Post_Data_image_df,Post_Data_video_df)
-    }else{
-      df=Post_Data_image_df
+      Post_Data_video_df=merge(Post_Data_video_df,Page_Data, by  = c("Username","Date"))
+      if (nrow(Post_Data_video_df)!=0){
+        Post_Data_video_df$Earned_Effective_Reach=0.014 * Post_Data_video_df$Views
+        Post_Data_video_df=select(Post_Data_video_df, Date, Text, Username,`Engagement Rate`,sentiment_keyword,mscore,`Post Image`,`Reply Count`,`Favorite Count`,`Retweet Count`,Earned_Effective_Reach,`Media Url`,Views,Type)
+        
+      }
     }
-    df$Followers.y=NULL
-    df$Day.y = NULL
-    names(df)[4] = "Day"
-    names(df)[17] = "Followers"
-    df=select(df, Date, Text, Username,`Engagement Rate`,sentiment_keyword,mscore,`Post Image`,`Reply Count`,`Favorite Count`,`Retweet Count`,Earned_Effective_Reach,`Media Url`,Views,Type)
+    
+    if (nrow(Post_Data_image_df)==0 & nrow(Post_Data_video_df)==0){
+      df = data.frame(matrix(ncol = 5, nrow = 0))
+    }else if (nrow(Post_Data_image_df)!=0 & nrow(Post_Data_video_df)!=0){
+      df = rbind(Post_Data_image_df,Post_Data_video_df)
+    }else if(nrow(Post_Data_image_df) == 0 & nrow(Post_Data_video_df)!=0){
+      df = Post_Data_video_df
+    }else if(nrow(Post_Data_video_df) == 0 & nrow(Post_Data_image_df)!=0){
+      df = Post_Data_image_df
+    }
+    
+    #df$Followers.y=NULL
+    #df$Day.y = NULL
+    #names(df)[4] = "Day"
+    #names(df)[17] = "Followers"
+    #df=select(df, Date, Text, Username,`Engagement Rate`,sentiment_keyword,mscore,`Post Image`,`Reply Count`,`Favorite Count`,`Retweet Count`,Earned_Effective_Reach,`Media Url`,Views,Type)
   }
   if (platform == "IG"){
-    Page_Data["Earned_Effective_Reach"] = 0.035 * Page_Data["Followers"] 
-    Post_Data_image_df = Post_Data[grepl("image|carousel", Post_Data$Type)==TRUE,]
+    #Page_Data["Earned_Effective_Reach"] = 0.035 * Page_Data["Followers"] 
+    #Post_Data_image_df = Post_Data[grepl("image|carousel", Post_Data$Type)==TRUE,]
+    
+    
+    Post_Data_image_df = Post_Data[grepl(paste(c("image|carousel"), collapse = "|"), Post_Data$Type)==TRUE,]
+    if(nrow(Post_Data_image_df)!=0){
+      Post_Data_image_df=merge(Post_Data_image_df,Page_Data, by  = c("Username","Date"))
+      if(nrow(Post_Data_image_df)!=0){
+        Post_Data_image_df["Earned_Effective_Reach"] = 0.035 * Post_Data_image_df["Followers"]
+        Post_Data_image_df = select(Post_Data_image_df,Username,Date,Caption,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Earned_Effective_Reach,Media,Views,Type)
+      }
+    }
+    
+    
+    Post_Data_video_df = Post_Data[(grepl("video", Post_Data$Type)==TRUE),]
+    if(nrow(Post_Data_video_df)!=0){
+      Post_Data_video_df["Earned_Effective_Reach"] = 0.25 * Post_Data_video_df["Views"] 
+      Post_Data_video_df = select(Post_Data_video_df,Username,Date,Caption,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Earned_Effective_Reach,Media,Views,Type )
+    }
+    
+    if (nrow(Post_Data_image_df)==0 & nrow(Post_Data_video_df)==0){
+      df = data.frame(matrix(ncol = 4, nrow = 0))
+    }else if (nrow(Post_Data_image_df)!=0 & nrow(Post_Data_video_df)!=0){
+      df = rbind(Post_Data_image_df,Post_Data_video_df)
+    }else if(nrow(Post_Data_image_df) == 0 & nrow(Post_Data_video_df)!=0){
+      df = Post_Data_video_df
+    }else if(nrow(Post_Data_video_df) == 0 & nrow(Post_Data_image_df)!=0){
+      df = Post_Data_image_df
+    }
     
     #names(Post_Data_image_df) = c("Date","Post","Username","Platform","EER","Profile_URL")
     #Post_Data_image_df=merge(Post_Data_image_df,Page_Data, by  = c("Username","Date"))
     #Post_Data_image_df = select(Post_Data_image_df,Username,Date,Caption,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Earned_Effective_Reach,Media )
     
-    if(nrow(Post_Data_image_df)!=0 & nrow(Page_Data)!=0){
-      Post_Data_image_df=merge(Post_Data_image_df,Page_Data, by  = c("Username","Date"))
-      Post_Data_image_df = select(Post_Data_image_df,Username,Date,Caption,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Earned_Effective_Reach,Media,Views,Type)
-      Post_Data_video_df = Post_Data[(grepl("video", Post_Data$Type)==TRUE),]
-      #View(Post_Data_video_df)
-      Post_Data_video_df["Earned_Effective_Reach"] = 0.25 * Post_Data_video_df["Views"] 
-      Post_Data_video_df = select(Post_Data_video_df,Username,Date,Caption,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Earned_Effective_Reach,Media,Views,Type )
-      
-      IG_Post_Data_sk2 = rbind(Post_Data_image_df,Post_Data_video_df)
-      df=IG_Post_Data_sk2
-
-    }else{
-      df = data.frame(matrix(ncol=4,nrow=0))
-    }
+    # if(nrow(Post_Data_image_df)!=0 & nrow(Page_Data)!=0){
+    #   Post_Data_image_df=merge(Post_Data_image_df,Page_Data, by  = c("Username","Date"))
+    #   Post_Data_image_df = select(Post_Data_image_df,Username,Date,Caption,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Earned_Effective_Reach,Media,Views,Type)
+    #   Post_Data_video_df = Post_Data[(grepl("video", Post_Data$Type)==TRUE),]
+    #   #View(Post_Data_video_df)
+    #   Post_Data_video_df["Earned_Effective_Reach"] = 0.25 * Post_Data_video_df["Views"] 
+    #   Post_Data_video_df = select(Post_Data_video_df,Username,Date,Caption,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Earned_Effective_Reach,Media,Views,Type )
+    #   
+    #   IG_Post_Data_sk2 = rbind(Post_Data_image_df,Post_Data_video_df)
+    #   df=IG_Post_Data_sk2
+    # 
+    # }else{
+    #   df = data.frame(matrix(ncol=4,nrow=0))
+    # }
     
   }
   
@@ -329,7 +417,7 @@ add_mscore <- function(df,type){
 
 add_logo <- function(df){
   
-  height = " height=\"52\"></img>"
+  height = " height=\"42\"></img>"
   
   fb_imageName= "facebook.png"
   fb_imageName=paste0("\"",fb_imageName,"\"")
@@ -358,15 +446,29 @@ add_logo <- function(df){
   
 }
 sainsbury_total <<- function(x,y){
-  
+  return(1-(1-x)*(1-y))
 }
 
 sainsburry <<- function(df){
   
-  total_reach=sum(df$Earned_Effective_Reach)
-  df["total_reach"] = total_reach
-  df["sainsburry"] = (df$Earned_Effective_Reach*20/100)
-  df["result"] = df["total_reach"] - df["sainsburry"]
-  sainsburry_value = total_reach - prod(df["result"] )
+  df["sainsburry"] = df$EER_percent*20/100
+  df["result"] = 1 - df["sainsburry"]
+  sainsburry_value = 1 - prod(df["result"] )
   return(sainsburry_value)
 }
+
+count_total_posts <<- function(df1,df2){
+  df1 = df1[grepl("sk2", df1$Label1)==TRUE,]
+  df2 = df2[grepl("sk2", df2$Label1)==TRUE,]
+  
+  return(format(nrow(df1)+nrow(df2),big.mark=",",scientific=FALSE))
+}
+
+count_total_influencers <<- function(df1,df2){
+  df1 = select(df1,Username)
+  df2 = select(df2,Username)
+  df_result =rbind(df1,df2)
+  return(format(nrow(unique(df_result)),big.mark=",",scientific=FALSE))
+  
+}
+

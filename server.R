@@ -6,7 +6,7 @@
 options(shiny.maxRequestSize = 30*1024^2)
 
 Sys.setlocale(category = "LC_CTYPE", locale = "chs")
-
+japan_EER<<-0
 reactive_TW_Post_Data <<-
   read_excel("data/japan_data.xlsx", sheet = "TW Post Data")
 
@@ -145,7 +145,11 @@ server=shinyServer(function(input, output, session){
   # },options = list(dom = 't'))
   
   output$sk2_posts_table <- DT::renderDataTable({
-    if (tolower(input$select_metric_inf)=="m-score"){
+    print("inside sk2_posts_table ")
+    if(is.null(input$select_metric_inf)) { return() }
+    if(is.null(input$typeofposts_ht)) { return() }
+    
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <<- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -153,7 +157,7 @@ server=shinyServer(function(input, output, session){
     }
     if(nrow(top10)!=0){
       
-      req(input$typeofposts_ht)
+      #req(input$typeofposts_ht)
       #get_sk2_data=NULL
       
       if(input$typeofposts_ht!='SK-II Posts')return()
@@ -165,39 +169,47 @@ server=shinyServer(function(input, output, session){
         # print("nrow(get_sk2_data) from this")
         # print (length(get_sk2_data))
         #DT::datatable(get_sk2_data,escape=F, options = list(pageLength = 5,searching = FALSE))
-        DT::datatable(get_sk2_data,escape=F, options = list(
+        colnames(get_sk2_data)[c(1,2,3,4,5,6,7,8,9,10)] <- paste0('<span style="color:',c("#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d"),'">',colnames(get_sk2_data)[c(1,2,3,4,5,6,7,8,9,10)],'</span>')
+        
+        
+        DT::datatable(get_sk2_data,escape=F, rownames = FALSE,selection = 'none',options = list(
           language = list(
             zeroRecords = "No records to display for the selected filter! Please change the filter options and try again."),
           
           pageLength = 5,searching = FALSE,columnDefs = list(list(
-            targets = 3,
+            targets = 2,
             render = JS(
               "function(data, type, row, meta) {",
               "return type === 'display' && data.length > 6 ?",
               "'<span title=\"' + data + '\">' + data.substr(0, 60) + '...</span>' : data;",
               "}")
           ))))%>% formatStyle(
-            'M-SCORE',
+            '<span style="color:#E0005d">MSCORE</span>',
             backgroundColor = "#FFC6DE"
           )%>% formatStyle(
-            'SENTIMENT',
+            '<span style="color:#E0005d">SENTIMENT</span>',
             color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
           )%>% formatStyle(
-            'ENGAGEMENT', 'SENTIMENT',
+            '<span style="color:#E0005d">ENGAGEMENT</span>', '<span style="color:#E0005d">SENTIMENT</span>',
             color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
           )%>% formatStyle(
-            'ENGAGEMENT RATE', 'SENTIMENT',
+            '<span style="color:#E0005d">ENGAGEMENT RATE</span>', '<span style="color:#E0005d">SENTIMENT</span>',
             color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
           )%>% formatStyle(
-            'M-SCORE', 'SENTIMENT',
+            '<span style="color:#E0005d">MSCORE</span>', '<span style="color:#E0005d">SENTIMENT</span>',
             color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
-          )
+          )%>%formatCurrency('<span style="color:#E0005d">ENGAGEMENT</span>',currency = "", interval = 3, mark = ","
+          )%>%formatCurrency('<span style="color:#E0005d">EARNED EFFECTIVE REACH</span>',currency = "", interval = 3, mark = ","
+          )%>%formatCurrency('<span style="color:#E0005d">MSCORE</span>',currency = "", interval = 3, mark = ","
+          )%>%formatCurrency('<span style="color:#E0005d">ENGAGEMENT RATE</span>',currency = "", interval = 3, mark = ","   
+          )%>%formatCurrency('<span style="color:#E0005d">VIEWS</span>',currency = "", interval = 3, mark = ","   )
         
         
       } 
     }else{
-      get_sk2_data = NULL
-      DT::datatable(get_sk2_data)
+      get_sk2_data = data.frame()
+      DT::datatable(get_sk2_data,rownames= FALSE,options = list(language = list(
+          zeroRecords = "No records to display for the selected filter! Please change the filter options and try again." )))
     }
   })
   
@@ -219,11 +231,13 @@ server=shinyServer(function(input, output, session){
 
     start_date =  unlist(strsplit(reactive_mostrecentposts_daterange(),split='|',fixed=TRUE))[1]
     end_date =  unlist(strsplit(reactive_mostrecentposts_daterange(),split='|',fixed=TRUE))[2]
+    type_of_post = input$type_mostrecentposts
     
     if(is.null(start_date) | is.na(start_date)) { return() }
     if(is.null(end_date) | is.na(end_date)) { return() }
+    if(is.null(type_of_post) | is.na(type_of_post)) { return() }
     
-    print(paste(start_date,end_date,sep="::"))
+    
     
     TW_Post_Data  = reactive_TW_Post_Data
     TW_Post_Data = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==TRUE,]
@@ -233,10 +247,7 @@ server=shinyServer(function(input, output, session){
       TW_Post_Data = subset(TW_Post_Data, TW_Post_Data$Date>=start_date & TW_Post_Data$Date <=end_date)
       if(nrow(TW_Post_Data)!=0){
         TW_Post_Data$Date=gsub("-", "/", TW_Post_Data$Date)
-        print("issue")
         TW_Post_Data$Date=format(as.Date(TW_Post_Data$Date), "%d/%m/%Y")
-        print("issue2")
-        print(TW_Post_Data$Date)
         TW_Post_Data = add_mscore(TW_Post_Data,"TW")
         TW_Post_Data$Engagement=  TW_Post_Data["Reply Count"] + TW_Post_Data["Favorite Count"] + TW_Post_Data["Retweet Count"]
         TW_Post_Data=as.data.frame(TW_Post_Data)
@@ -244,7 +255,6 @@ server=shinyServer(function(input, output, session){
         TW_Post_Data$Engagement = TW_Post_Data$Engagement$`Reply Count`
       }
     }
-    print("end of this")
     #TW_Post_Data$reach = 0
     # TW_Post_Data = select(TW_Post_Data,Date,Text,Username,platform,reach,Engagement,`Favorite Count`,sentiment_keyword,mscore,`Post Image`)
     # TW_Post_Data$Engagement = TW_Post_Data$Engagement$`Reply Count`
@@ -255,17 +265,18 @@ server=shinyServer(function(input, output, session){
     TW_Page_Data$Date = dmy(TW_Page_Data$Date)
     
     TW_Page_Data = subset(TW_Page_Data, TW_Page_Data$Date>=start_date & TW_Page_Data$Date <=end_date)
-    if(nrow(TW_Page_Data)!=0){
+    if(nrow(TW_Page_Data)!=0 & nrow(TW_Post_Data)!=0){
       TW_Page_Data$Date=gsub("-", "/", TW_Page_Data$Date)
       TW_Page_Data$Date=format(as.Date(TW_Page_Data$Date), "%d/%m/%Y")
-      
       TW_EER = add_EER(TW_Page_Data,TW_Post_Data,"TW")
-      TW_Post_Data = merge(TW_Post_Data,TW_EER)
-      TW_Post_Data = select(TW_Post_Data,Date,Text,Type,Username,platform,
-                            Earned_Effective_Reach,Engagement,`Favorite Count`,sentiment_keyword,mscore,`Post Image`,Views,URL)
       
-      names(TW_Post_Data) = c("DATE", "POST","TYPE", "KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","URL","VIEWS","POST_URL")
-      print("1")
+      #print(names(TW_EER))
+      TW_Post_Data = merge(TW_Post_Data,TW_EER)
+      
+      TW_Post_Data = select(TW_Post_Data,Date,Text,Type,Username,platform,
+                            Earned_Effective_Reach,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Post Image`,Views,URL)
+      
+      names(TW_Post_Data) = c("DATE", "POST","TYPE", "KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","ENGAGEMENT RATE","SENTIMENT","M-SCORE","URL","VIEWS","POST_URL")
       TW_Post_Data$VIEWS[is.na(TW_Post_Data$VIEWS)] <- "-"
     }
     
@@ -290,15 +301,14 @@ server=shinyServer(function(input, output, session){
     IG_Page_Data$Date = dmy(IG_Page_Data$Date)
     
     IG_Page_Data = subset(IG_Page_Data, IG_Page_Data$Date>=start_date & IG_Page_Data$Date <=end_date)
-    if(nrow(IG_Page_Data)!=0){
+    if(nrow(IG_Page_Data)!=0 & nrow(IG_Post_Data)!=0){
       IG_Page_Data$Date=gsub("-", "/", IG_Page_Data$Date)
       IG_Page_Data$Date=format(as.Date(IG_Page_Data$Date), "%d/%m/%Y")
       
       IG_EER = add_EER(IG_Page_Data,IG_Post_Data,"IG")
       IG_Post_Data = merge(IG_Post_Data,IG_EER)
-      IG_Post_Data = select(IG_Post_Data,Date,Caption,Type,Username,platform,Earned_Effective_Reach,Engagement,Likes,sentiment_keyword,mscore,`Media URL`,Views,Media)
-      names(IG_Post_Data) = c("DATE", "POST","TYPE", "KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","URL","VIEWS","POST_URL")
-      print("2")
+      IG_Post_Data = select(IG_Post_Data,Date,Caption,Type,Username,platform,Earned_Effective_Reach,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Views,Media)
+      names(IG_Post_Data) = c("DATE", "POST","TYPE", "KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","ENGAGEMENT RATE","SENTIMENT","M-SCORE","URL","VIEWS","POST_URL")
       IG_Post_Data$VIEWS[is.na(IG_Post_Data$VIEWS)] <- "-"
     }
     
@@ -307,7 +317,7 @@ server=shinyServer(function(input, output, session){
       most_recent_posts = rbind(TW_Post_Data,IG_Post_Data)
     }else if(nrow(TW_Post_Data)==0 && nrow(IG_Post_Data)==0){
       most_recent_posts = data.frame(matrix(ncol=12,nrow=0))
-      names(most_recent_posts)=c("DATE", "POST", "TYPE","DESCRIPTION","KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","VIEWS","M-SCORE")
+      names(most_recent_posts)=c("DATE", "POST", "TYPE","DESCRIPTION","KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","ENGAGEMENT RATE","SENTIMENT","VIEWS","M-SCORE")
     }else if(nrow(TW_Post_Data)==0){
       most_recent_posts = IG_Post_Data
     }else if(nrow(IG_Post_Data)==0){
@@ -315,9 +325,19 @@ server=shinyServer(function(input, output, session){
     }
     
     if(nrow(most_recent_posts)!=0){
+      if(type_of_post == "Image"){
+        most_recent_posts = most_recent_posts[grepl("image|Photo|Text|Link", most_recent_posts$TYPE)==TRUE,]
+      }else if(type_of_post == "Video"){
+        most_recent_posts = most_recent_posts[grepl("video|Video", most_recent_posts$TYPE)==TRUE,]
+      }else if(type_of_post == "Carousel"){
+        most_recent_posts = most_recent_posts[grepl("carousel", most_recent_posts$TYPE)==TRUE,]
+      }
+    }
+    
+    if(nrow(most_recent_posts)!=0){
       most_recent_posts$`EARNED EFFECTIVE REACH`[(most_recent_posts$`EARNED EFFECTIVE REACH` - floor(most_recent_posts$`EARNED EFFECTIVE REACH`)) <.5]  = floor(most_recent_posts$`EARNED EFFECTIVE REACH`[(most_recent_posts$`EARNED EFFECTIVE REACH` - floor(most_recent_posts$`EARNED EFFECTIVE REACH`)) < .5])
       most_recent_posts$`EARNED EFFECTIVE REACH`[(most_recent_posts$`EARNED EFFECTIVE REACH` - floor(most_recent_posts$`EARNED EFFECTIVE REACH`)) >= .5]= ceiling(most_recent_posts$`EARNED EFFECTIVE REACH`[(most_recent_posts$`EARNED EFFECTIVE REACH` - floor(most_recent_posts$`EARNED EFFECTIVE REACH`)) >= .5])
-      height = " width=\"52\" height=\"52\"></img>"
+      height = " width=\"42\" height=\"42\"></img>"
       most_recent_posts$picture_str = paste0("\"",most_recent_posts$URL,"\"")
       
       #most_recent_posts$IMAGE = paste("<a href=",most_recent_posts$POST_URL ,"><img class='img-circle' src=",most_recent_posts$picture_str,height)
@@ -325,12 +345,12 @@ server=shinyServer(function(input, output, session){
       most_recent_posts$URL = NULL
       most_recent_posts$picture_str=NULL
       most_recent_posts$POST_URL=NULL
-      names(most_recent_posts)=c("DATE", "DESCRIPTION", "TYPE","KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","VIEWS","POST")
+      names(most_recent_posts)=c("DATE", "DESCRIPTION", "TYPE","KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","ENGAGEMENT RATE","SENTIMENT","M-SCORE","VIEWS","POST")
       
       most_recent_posts=add_logo(most_recent_posts)
       most_recent_posts$PLATFORM = NULL
-      names(most_recent_posts)=c("DATE", "DESCRIPTION","TYPE", "KOL", "EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","M-SCORE","VIEWS","POST","PLATFORM")
-      most_recent_posts <- most_recent_posts[,c("DATE", "POST","TYPE", "DESCRIPTION","KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","REACTIONS","SENTIMENT","VIEWS","M-SCORE")]
+      names(most_recent_posts)=c("DATE", "DESCRIPTION","TYPE", "KOL", "EARNED EFFECTIVE REACH","ENGAGEMENT","ENGAGEMENT RATE","SENTIMENT","MSCORE","VIEWS","POST","PLATFORM")
+      most_recent_posts <- most_recent_posts[,c("DATE", "POST","TYPE", "DESCRIPTION","KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","ENGAGEMENT RATE","SENTIMENT","VIEWS","MSCORE")]
       
       
       most_recent_posts$DATE=gsub("/", "-", most_recent_posts$DATE)
@@ -338,47 +358,68 @@ server=shinyServer(function(input, output, session){
       most_recent_posts=most_recent_posts[ order(most_recent_posts$DATE , decreasing = TRUE ),]
       most_recent_posts$DATE=gsub("-", "/", most_recent_posts$DATE)
       
-      most_recent_posts$`EARNED EFFECTIVE REACH`  = format(most_recent_posts$`EARNED EFFECTIVE REACH`,big.mark=",",scientific=FALSE)
-      most_recent_posts$ENGAGEMENT                = format(most_recent_posts$ENGAGEMENT,big.mark=",",scientific=FALSE)
-      most_recent_posts$REACTIONS                 = format(most_recent_posts$REACTIONS,big.mark=",",scientific=FALSE)
-      most_recent_posts$`M-SCORE`                 = format(most_recent_posts$`M-SCORE`,big.mark=",",scientific=FALSE)
+      
+      most_recent_posts$ENGAGEMENT=NULL
+      most_recent_posts$TYPE=NULL
+      # most_recent_posts$`EARNED EFFECTIVE REACH`  = format(most_recent_posts$`EARNED EFFECTIVE REACH`,big.mark=",",scientific=FALSE)
+      # most_recent_posts$ENGAGEMENT                = format(most_recent_posts$ENGAGEMENT,big.mark=",",scientific=FALSE)
+      # most_recent_posts$REACTIONS                 = format(most_recent_posts$REACTIONS,big.mark=",",scientific=FALSE)
+      # most_recent_posts$`M-SCORE`                 = format(most_recent_posts$`M-SCORE`,big.mark=",",scientific=FALSE)
+      most_recent_posts_data <<- most_recent_posts
+      print(names(most_recent_posts))
+      colnames(most_recent_posts)[c(1,2,3,4,5,6,7,8,9,10)] <- paste0('<span style="color:',c("#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d"),'">',colnames(most_recent_posts)[c(1,2,3,4,5,6,7,8,9,10)],'</span>')
+      
+      #dom='ft'
+      DT::datatable(most_recent_posts,escape=F, rownames= FALSE,selection = 'none',options = list(scrollX = TRUE,pageLength = 6,searching = FALSE,columnDefs = list(list(
+        
+        targets = 2,
+        render = JS(
+          "function(data, type, row, meta) {",
+          "return type === 'display' && data.length > 6 ?",
+          "'<span title=\"' + data + '\">' + data.substr(0, 100) + '...</span>' : data;",
+          "}")
+      ))))%>% formatStyle(
+        '<span style="color:#E0005d">MSCORE</span>',
+        backgroundColor = "#FFC6DE"
+      )%>% formatStyle(
+        '<span style="color:#E0005d">SENTIMENT</span>',
+        color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
+        # )%>% formatStyle(
+        #   'ENGAGEMENT', 'SENTIMENT',
+        #   color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
+      )%>% formatStyle(
+        '<span style="color:#E0005d">ENGAGEMENT RATE</span>', '<span style="color:#E0005d">SENTIMENT</span>',
+        color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
+      )%>% formatStyle(
+        '<span style="color:#E0005d">MSCORE</span>', '<span style="color:#E0005d">SENTIMENT</span>',
+        color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
+        #)%>%formatCurrency('ENGAGEMENT',currency = "", interval = 3, mark = ","
+      )%>%formatCurrency('<span style="color:#E0005d">EARNED EFFECTIVE REACH</span>',currency = "", interval = 3, mark = ","
+      )%>%formatCurrency('<span style="color:#E0005d">ENGAGEMENT RATE</span>',currency = "", interval = 3, mark = ","
+      )%>%formatCurrency( '<span style="color:#E0005d">MSCORE</span>',currency = "", interval = 3, mark = ",")
+      #, callback = JS('table.page(3).draw(false);')) 
+      
     }
-    #View(most_recent_posts)
-    most_recent_posts_data <<- most_recent_posts
-    #dom='ft'
-    DT::datatable(most_recent_posts,escape=F, options = list(scrollX = TRUE,pageLength = 6,searching = FALSE,columnDefs = list(list(
-      targets = 4,
-      render = JS(
-        "function(data, type, row, meta) {",
-        "return type === 'display' && data.length > 6 ?",
-        "'<span title=\"' + data + '\">' + data.substr(0, 100) + '...</span>' : data;",
-        "}")
-    ))))%>% formatStyle(
-      'M-SCORE',
-      backgroundColor = "#FFC6DE"
-    )%>% formatStyle(
-      'SENTIMENT',
-      color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
-    )%>% formatStyle(
-      'ENGAGEMENT', 'SENTIMENT',
-      color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
-    )%>% formatStyle(
-      'REACTIONS', 'SENTIMENT',
-      color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
-    )%>% formatStyle(
-      'M-SCORE', 'SENTIMENT',
-      color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
-    )
-    #, callback = JS('table.page(3).draw(false);')) 
     
-  }  )
+    else{
+      most_recent_posts = data.frame(matrix(nrow=0,ncol=10))
+      names(most_recent_posts) = c("DATE", "POST", "DESCRIPTION","KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT RATE","SENTIMENT","VIEWS","MSCORE")
+      colnames(most_recent_posts)[c(1,2,3,4,5,6,7,8,9,10)] <- paste0('<span style="color:',c("#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d"),'">',colnames(most_recent_posts)[c(1,2,3,4,5,6,7,8,9,10)],'</span>')
+      
+      DT::datatable(most_recent_posts,escape=F, rownames= FALSE,options=list(language = list(
+        zeroRecords = "No records to display for the selected filter! Please change the filter options and try again.")))
+   }
+    
+
+    
+  })
   
   
   
   
   output$top_comments_table <- DT::renderDataTable({
-    
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if(is.null(input$select_metric_inf)) { return() }
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -396,16 +437,14 @@ server=shinyServer(function(input, output, session){
       }
       # View(data)
       # data=data[complete.cases(data), ]
+      colnames(data)[c(1,2,3,4)] <- paste0('<span style="color:',c("#E0005d","#E0005d","#E0005d","#E0005d"),'">',colnames(data)[c(1,2,3,4)],'</span>')
       
       top_comments_data <<- data
-      DT::datatable(data,escape=F, options = list(
+      DT::datatable(data,escape=F, rownames= FALSE,selection = 'none',options = list(
         language = list(
           zeroRecords = "No records to display for the selected filter! Please change the filter options and try again."),
         
         lengthChange = TRUE,pageLength = 10,searching = FALSE))
-    }else{
-      data = NULL
-      DT::datatable(data)
     }
     
   })
@@ -417,8 +456,8 @@ server=shinyServer(function(input, output, session){
     
     
     #v$platform_params <- c("Facebook","Twitter","Instagram")
-    v$platform_params <- c("Twitter","Instagram","All")
-    v$display_type <- c("Earned Effective Reach","Engagement","Engagement Rate",'Sentiment','M-Score')
+    v$platform_params <- c("All","Twitter","Instagram")
+    v$display_type <- c("Earned Effective Reach","Engagement","Engagement Rate",'MScore')
     v$display_typeofposts <-  c("SK-II Posts","Non SK-II Posts")
     v$display_month <-  c("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")
     v$historical_trend = "HISTORICAL TREND"
@@ -448,29 +487,24 @@ server=shinyServer(function(input, output, session){
     top10 = reactive_return_getTop10Infleuncer()
     influencer_name = as.character(top10[button_number,1])
     
+    start_date =  unlist(strsplit(reactive_inf_daterange(),split='|',fixed=TRUE))[1]
+    end_date =  unlist(strsplit(reactive_inf_daterange(),split='|',fixed=TRUE))[2]
     
     req(input$platform_ht)
-    req(input$month_ht)
-    req(input$year_ht)
+    # req(input$month_ht)
+    # req(input$year_ht)
     platform_ht=input$platform_ht
-    
-    # print (influencer_name)
-    # print(input$platform_ht)
-    # print(input$month_ht)
-    # print(input$year_ht)
-    
-    if(platform_ht == 'Facebook'){
-      FB_Comment_Data  = reactive_FB_Comments_Data()
-      FB_Comment_Data = subset(FB_Comment_Data,tolower(FB_Comment_Data$Name) == tolower(influencer_name) )
-      FB_Comment_Data=subset(FB_Comment_Data, as.numeric(sapply(strsplit(as.character(FB_Comment_Data$Date), split="/"),tail, n=1)) == input$year_ht )
-      FB_Comment_Data = subset(FB_Comment_Data,tolower(month.abb[as.numeric(sapply(strsplit(as.character(FB_Comment_Data$Date), split="/"),'[',2))]) == tolower(input$month_ht) )
-      data=select(FB_Comment_Data,Message,Date)
-      data = data[rev(order(data$Date)),c('Message')]
-      
-      
-    }
+    # if(platform_ht == 'Facebook'){
+    #   FB_Comment_Data  = reactive_FB_Comments_Data()
+    #   FB_Comment_Data = subset(FB_Comment_Data,tolower(FB_Comment_Data$Name) == tolower(influencer_name) )
+    #   FB_Comment_Data=subset(FB_Comment_Data, as.numeric(sapply(strsplit(as.character(FB_Comment_Data$Date), split="/"),tail, n=1)) == input$year_ht )
+    #   FB_Comment_Data = subset(FB_Comment_Data,tolower(month.abb[as.numeric(sapply(strsplit(as.character(FB_Comment_Data$Date), split="/"),'[',2))]) == tolower(input$month_ht) )
+    #   data=select(FB_Comment_Data,Message,Date)
+    #   data = data[rev(order(data$Date)),c('Message')]
+    #   
+    #   
+    # }
     if(platform_ht == 'All'){
-      print ('ALL')
       flag=1
       platform_ht = 'Twitter'
     }
@@ -480,101 +514,117 @@ server=shinyServer(function(input, output, session){
       }
       TW_Comment_Data  = reactive_TW_Comments_Data
       
-      # TW_Post_Data     = reactive_TW_Post_Data
-      # TW_Comment_Data = merge(TW_Comment_Data,TW_Post_Data,by.x="Mention Id",by.y="Tweet Id")
-      # TW_Comment_Data = select(TW_Comment_Data,"Message","Type","Media",`Media URL`,"Username.x","Date.x")
-      # names(TW_Comment_Data) = c("Message","POST TYPE","POST_URL","POST","Username","Date")
-      
+      #        TW_Comment_Data=subset(TW_Comment_Data, as.numeric(sapply(strsplit(as.character(TW_Comment_Data$Date), split="/"),tail, n=1)) == input$year_ht )
+      #         TW_Comment_Data = subset(TW_Comment_Data,tolower(month.abb[as.numeric(sapply(strsplit(as.character(TW_Comment_Data$Date), split="/"),'[',2))]) == tolower(input$month_ht) )
+      TW_Post_Data     = reactive_TW_Post_Data
+    
       TW_Comment_Data = subset(TW_Comment_Data,tolower(TW_Comment_Data$Username) == tolower(influencer_name) )
       if (nrow(TW_Comment_Data)!=0){
-        TW_Comment_Data=subset(TW_Comment_Data, as.numeric(sapply(strsplit(as.character(TW_Comment_Data$Date), split="/"),tail, n=1)) == input$year_ht )
+        TW_Comment_Data$Date=gsub("/", "-", TW_Comment_Data$Date)
+        TW_Comment_Data$Date = dmy(TW_Comment_Data$Date)
+        TW_Comment_Data = subset(TW_Comment_Data, TW_Comment_Data$Date>=start_date & TW_Comment_Data$Date <=end_date)
         if (nrow(TW_Comment_Data)!=0){
-          TW_Comment_Data = subset(TW_Comment_Data,tolower(month.abb[as.numeric(sapply(strsplit(as.character(TW_Comment_Data$Date), split="/"),'[',2))]) == tolower(input$month_ht) )
-          if (nrow(TW_Comment_Data)!=0){
-            data=select(TW_Comment_Data,Text,Date)
-            data = data[rev(order(data$Date)),c('Text')]
-            if (flag==1){
-              print ("comes here 1")
-              data_TW <- data
-              
-            }
+          TW_Comment_Data$Date=gsub("-", "/", TW_Comment_Data$Date)
+          TW_Comment_Data$Date=format(as.Date(TW_Comment_Data$Date), "%d/%m/%Y")
+          TW_Comment_Data = merge(TW_Comment_Data,TW_Post_Data,by.x="Mention Id",by.y="Tweet Id")
+          if(nrow(TW_Comment_Data)!=0){
+            TW_Comment_Data = select(TW_Comment_Data,"Message","Type","Media",`Media URL`,"Username.x","Date.x")
+            names(TW_Comment_Data) = c("Message","POST TYPE","POST_URL","POST","Username","Date")
+            data=select(TW_Comment_Data,Date,Message,`POST TYPE`,`POST_URL`,POST)
+            data = data[rev(order(data$Date)),c('Date','Message','POST TYPE','POST_URL','POST')]
+          }
+          if (flag==1){
+            data_TW <- data
           }
         }
       }
     }
     if(platform_ht == 'Instagram'){
+      Post_Data_video_df = data.frame()
+      Post_Data_image_df = data.frame()
       
+      IG_Page_Data = reactive_IG_Page_Data
+      IG_Page_Data["Earned_Effective_Reach"] = 0.035 * IG_Page_Data["Followers"]
       
       IG_Post_Data  = reactive_IG_Post_Data
       IG_Post_Data = IG_Post_Data[grepl("sk2", IG_Post_Data$Label1)==TRUE,]
-      print (nrow(IG_Post_Data))
-      IG_Page_Data = reactive_IG_Page_Data
-      
-      IG_Page_Data["Earned_Effective_Reach"] = 0.035 * IG_Page_Data["Followers"]
-      Post_Data_image_df = IG_Post_Data[grepl("image|carousel", IG_Post_Data$Type)==TRUE,]
-      print (nrow(Post_Data_image_df))
-      Post_Data_image_df=merge(Post_Data_image_df,IG_Page_Data, by  = c("Username","Date"))
-      Post_Data_image_df = select(Post_Data_image_df,Username,Date,Caption,Engagement,`Engagement Rate`,`Media URL`,Earned_Effective_Reach,Media ,`Media ID`,Type)
-      
-      Post_Data_video_df = IG_Post_Data[(grepl("video", IG_Post_Data$Type)==TRUE),]
-      print (nrow(Post_Data_video_df))
-      Post_Data_video_df["Earned_Effective_Reach"] = 0.25 * Post_Data_video_df["Views"]
-      Post_Data_video_df = select(Post_Data_video_df,Username,Date,Caption,Engagement,`Engagement Rate`,`Media URL`,Earned_Effective_Reach,Media,`Media ID`,Type )
-      
-      IG_Post_Data = rbind(Post_Data_image_df,Post_Data_video_df)
+      IG_Post_Data$Date=gsub("/", "-", IG_Post_Data$Date)
+      IG_Post_Data$Date = dmy(IG_Post_Data$Date)
+      IG_Post_Data = subset(IG_Post_Data, IG_Post_Data$Date>=start_date & IG_Post_Data$Date <=end_date)
+      if(nrow(IG_Post_Data)!=0){
+        IG_Post_Data$Date=gsub("-", "/", IG_Post_Data$Date)
+        IG_Post_Data$Date=format(as.Date(IG_Post_Data$Date), "%d/%m/%Y")
+        
+        Post_Data_image_df = IG_Post_Data[grepl("image|carousel", IG_Post_Data$Type)==TRUE,]
+        if(nrow(Post_Data_image_df)!=0){
+          Post_Data_image_df=merge(Post_Data_image_df,IG_Page_Data, by  = c("Username","Date"))
+          if(nrow(Post_Data_image_df)!=0){
+            Post_Data_image_df = select(Post_Data_image_df,Username,Date,Caption,Engagement,`Engagement Rate`,`Media URL`,Earned_Effective_Reach,Media ,`Media ID`,Type)
+          }
+        }
+        Post_Data_video_df = IG_Post_Data[(grepl("video", IG_Post_Data$Type)==TRUE),]
+        if(nrow(Post_Data_video_df)){
+          Post_Data_video_df["Earned_Effective_Reach"] = 0.25 * Post_Data_video_df["Views"]
+          Post_Data_video_df = select(Post_Data_video_df,Username,Date,Caption,Engagement,`Engagement Rate`,`Media URL`,Earned_Effective_Reach,Media,`Media ID`,Type )
+        }
+      }
+      if(nrow(Post_Data_image_df)!=0 & nrow(Post_Data_video_df)!=0){
+        IG_Post_Data = rbind(Post_Data_image_df,Post_Data_video_df)
+      }else if(nrow(Post_Data_image_df)==0 & nrow(Post_Data_video_df)==0){
+        IG_Post_Data = data.frame()
+      }else if(nrow(Post_Data_image_df)==0){
+        IG_Post_Data=Post_Data_video_df
+      }else if(nrow(Post_Data_video_df)==0){
+        IG_Post_Data=Post_Data_image_df
+      }
       
       IG_Comment_Data  = reactive_IG_Comments_Data
-      IG_Comment_Data = merge(IG_Comment_Data,IG_Post_Data,by="Media ID")
-      IG_Comment_Data = select(IG_Comment_Data,"Engagement","Message","Type","Media",`Media URL`,"Username.x","Date.x")
-      names(IG_Comment_Data) = c("Engagement","Message","POST TYPE","POST_URL","POST","Username","Date")
-      
-      IG_Comment_Data = subset(IG_Comment_Data,tolower(IG_Comment_Data$Username) == tolower(influencer_name) )
-      print (nrow(IG_Comment_Data))
-      if (nrow(IG_Comment_Data)!=0){
-        IG_Comment_Data=subset(IG_Comment_Data, as.numeric(sapply(strsplit(as.character(IG_Comment_Data$Date), split="/"),tail, n=1)) == input$year_ht )
-        print (nrow(IG_Comment_Data))
-        if (nrow(IG_Comment_Data)!=0){
-          IG_Comment_Data = subset(IG_Comment_Data,tolower(month.abb[as.numeric(sapply(strsplit(as.character(IG_Comment_Data$Date), split="/"),'[',2))]) == tolower(input$month_ht) )
-          print (nrow(IG_Comment_Data))
+      if(nrow(IG_Post_Data)!=0){
+        IG_Comment_Data = merge(IG_Comment_Data,IG_Post_Data,by="Media ID")
+        if(nrow(IG_Comment_Data)!=0){
+          IG_Comment_Data = select(IG_Comment_Data,"Engagement","Message","Type","Media",`Media URL`,"Username.x","Date.x")
+          names(IG_Comment_Data) = c("Engagement","Message","POST TYPE","POST_URL","POST","Username","Date")
+          IG_Comment_Data = subset(IG_Comment_Data,tolower(IG_Comment_Data$Username) == tolower(influencer_name) )
           if (nrow(IG_Comment_Data)!=0){
-            data=select(IG_Comment_Data,Engagement,Date,Message,`POST TYPE`,POST_URL,POST)
-            data = data[rev(order(data$Engagement)),c('Date','Message','POST TYPE','POST_URL','POST')]
-            if (flag==1){
-              print ("comes here 2")
-              data_IG <- data
+            IG_Comment_Data$Date=gsub("/", "-", IG_Comment_Data$Date)
+            IG_Comment_Data$Date = dmy(IG_Comment_Data$Date)
+            IG_Comment_Data = subset(IG_Comment_Data, IG_Comment_Data$Date>=start_date & IG_Comment_Data$Date <=end_date)
+            if (nrow(IG_Comment_Data)!=0){
+              IG_Comment_Data$Date=gsub("-", "/", IG_Comment_Data$Date)
+              IG_Comment_Data$Date=format(as.Date(IG_Comment_Data$Date), "%d/%m/%Y")
+              if (nrow(IG_Comment_Data)!=0){
+                data=select(IG_Comment_Data,Engagement,Date,Message,`POST TYPE`,POST_URL,POST)
+                data = data[rev(order(data$Engagement)),c('Date','Message','POST TYPE','POST_URL','POST')]
+                if (flag==1){
+                  data_IG <- data
+                }
+              }
             }
-            print (nrow(data))
           }
         }
       }
-      
     }
     
     if (flag==1){
       if (!is.null(data_IG) & !is.null(data_TW)){
-        print ("1~~~~")
         data = rbind(data_IG,data_TW)
       }else if (is.null(data_IG) & is.null(data_TW)){
-        print ("in the null thing")
         data = NULL
       }
       else if (is.null(data_TW)){
-        print ("2~~~~")
         data = data_IG
       }else if(is.null(data_IG)){
-        print ("3~~~~")
         data = data_TW
       }
     }
     if (is.null(data)){
-      print ("in this now")
-      data <- data.frame(matrix(ncol = 4, nrow = 0))
-      names(data)= c("DATE","COMMENTS","POST TYPE","POST")
+      data <- data.frame(matrix(ncol = 5, nrow = 0))
+      names(data)= c("DATE","COMMENTS","POST TYPE","POST_URL","POST")
     }else{
       data=as.data.frame(data)
       names(data) = c("DATE","COMMENTS","POST TYPE","POST_URL","POST")
       
-      height = " width=\"50\" height=\"52\"></img>"
+      height = " width=\"42\" height=\"42\"></img>"
       data$picture_str = paste0("\"",data$POST,"\"")
       #data$POST = paste("<a href=",data$POST_URL ,"><img class='img-circle' src=",data$picture_str,height)
       data$POST = paste("<a href=",data$POST_URL ,"target=_blank","><img src=",data$picture_str,height)
@@ -583,6 +633,10 @@ server=shinyServer(function(input, output, session){
       data$picture_str=NULL
       data$POST_URL=NULL
       names(data)= c("DATE","COMMENTS","POST TYPE","POST")
+      
+      data$DATE=gsub("/", "-", data$DATE)
+      data$DATE=dmy(data$DATE)
+      data$DATE=gsub("-", "/", data$DATE)
     }
     
     return (data)
@@ -595,8 +649,8 @@ server=shinyServer(function(input, output, session){
     req(input$platform_ht)
     req(input$metric_ht)
     req(input$typeofposts_ht)
-    req(input$month_ht)
-    req(input$year_ht)
+    #req(input$month_ht)
+    #req(input$year_ht)
     data=NULL
     button_number=as.numeric(unlist(strsplit(v$button_clicked,"button"))[-1])
     #top10 = reactive_return_getTop10Infleuncer()
@@ -613,6 +667,14 @@ server=shinyServer(function(input, output, session){
     end_date =  unlist(strsplit(reactive_inf_daterange(),split='|',fixed=TRUE))[2]
     type_of_post = input$display_typeofpost_post  
     
+    print(start_date)
+    print(end_date)
+    print(type_of_post)
+    print(influencer_name)
+    print(button_number)
+    print(input$platform_ht)
+    print(input$metric_ht)
+    print(input$typeofposts_ht)
     # if(input$platform_ht == 'Facebook'){
     #   FB_Post_Data  = reactive_FB_Post_Data
     #   FB_Post_Data = FB_Post_Data[grepl("sk2", FB_Post_Data$Label1)==TRUE,]
@@ -646,34 +708,39 @@ server=shinyServer(function(input, output, session){
       TW_Post_Data$Date=gsub("/", "-", TW_Post_Data$Date)
       TW_Post_Data$Date = dmy(TW_Post_Data$Date)
       TW_Post_Data = subset(TW_Post_Data, TW_Post_Data$Date>=start_date & TW_Post_Data$Date <=end_date)
+      print("1")
       if(nrow(TW_Post_Data)!=0){
+        print("2")
         TW_Post_Data$Date=gsub("-", "/", TW_Post_Data$Date)
         TW_Post_Data$Date=format(as.Date(TW_Post_Data$Date), "%d/%m/%Y")
-        if(type_of_post == "Image"){
-          TW_Post_Data = TW_Post_Data[grepl("Photo|Text|Link", TW_Post_Data$Type)==TRUE,]
-        }else if(type_of_post == "Video"){
-          TW_Post_Data = TW_Post_Data[grepl("Video", TW_Post_Data$Type)==TRUE,]
-        }else if(type_of_post == "Carousel"){
-          TW_Post_Data = data.frame()
-        }
+        # if(type_of_post == "Image"){
+        #   TW_Post_Data = TW_Post_Data[grepl("Photo|Text|Link", TW_Post_Data$Type)==TRUE,]
+        # }else if(type_of_post == "Video"){
+        #   TW_Post_Data = TW_Post_Data[grepl("Video", TW_Post_Data$Type)==TRUE,]
+        # }else if(type_of_post == "Carousel"){
+        #   TW_Post_Data = data.frame()
+        # }
       }
-      print(paste("#1 TW_Post_Data - ",nrow(TW_Post_Data)))
       TW_Page_Data = reactive_TW_Page_Data
       if(nrow(TW_Post_Data)!=0){
+        print("3")
         TW_Post_Data = add_mscore(TW_Post_Data,"TW")
         TW_Post_Data = add_EER(TW_Page_Data,TW_Post_Data,"TW")
       
       
       #View(TW_Post_Data)
         TW_Post_Data = subset(TW_Post_Data,TW_Post_Data$Username == influencer_name )
-        print(paste(" #2 TW_Post_Data - ",nrow(TW_Post_Data)))
+        print("4")
         if(nrow(TW_Post_Data)!=0){
+          print("5")
           #TW_Post_Data=subset(TW_Post_Data, as.numeric(sapply(strsplit(as.character(TW_Post_Data$Date), split="/"),tail, n=1)) == input$year_ht )
           if(nrow(TW_Post_Data)!=0){
+            print("6")
             #TW_Post_Data = subset(TW_Post_Data,tolower(month.abb[as.numeric(sapply(strsplit(as.character(TW_Post_Data$Date), split="/"),'[',2))]) == tolower(input$month_ht) )
             # print ("HERE")
             # print (nrow(TW_Post_Data))
             if(nrow(TW_Post_Data)!=0){
+              print("7")
               # View(TW_Post_Data)
               #TW_Post_Data$Engagement = TW_Post_Data$Retweet.Count + TW_Post_Data$Retweet.Count + TW_Post_Data$Favorite.Count
               TW_Post_Data$Engagement=  TW_Post_Data["Reply Count"] + TW_Post_Data["Favorite Count"] + TW_Post_Data["Retweet Count"]
@@ -684,7 +751,9 @@ server=shinyServer(function(input, output, session){
               data=select(TW_Post_Data,Date,Text,Earned_Effective_Reach,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Post Image`,`Media Url`,Views,Type)
               names(data)=c('Date','Description','Earned Effective Reach','Engagement','Engagement Rate','Sentiment','M-SCORE','URL','POST_URL',"Views","Type")
               data=data[rev(order(data$Engagement)),c('Date','Description','Type','Views','Earned Effective Reach','Engagement','Engagement Rate','Sentiment','M-SCORE','URL','POST_URL')]
+              
               if(flag==1){
+                print("8")
                 data_TW=data
               }
             }
@@ -694,23 +763,26 @@ server=shinyServer(function(input, output, session){
     }
     
     if(platform_ht == 'Instagram'){
+      print("9")
       IG_Post_Data  = reactive_IG_Post_Data
       IG_Post_Data = IG_Post_Data[grepl("sk2", IG_Post_Data$Label1)==TRUE,]
       if(nrow(IG_Post_Data)!=0){
-        if(type_of_post == "Image"){
-          IG_Post_Data = IG_Post_Data[grepl("image", IG_Post_Data$Type)==TRUE,]
-        }else if(type_of_post == "Video"){
-          IG_Post_Data = IG_Post_Data[grepl("video", IG_Post_Data$Type)==TRUE,]
-        }else if(type_of_post == "Carousel"){
-          IG_Post_Data = IG_Post_Data[grepl("carousel", IG_Post_Data$Type)==TRUE,]
-        }
+        print("10")
+        # if(type_of_post == "Image"){
+        #   IG_Post_Data = IG_Post_Data[grepl("image", IG_Post_Data$Type)==TRUE,]
+        # }else if(type_of_post == "Video"){
+        #   IG_Post_Data = IG_Post_Data[grepl("video", IG_Post_Data$Type)==TRUE,]
+        # }else if(type_of_post == "Carousel"){
+        #   IG_Post_Data = IG_Post_Data[grepl("carousel", IG_Post_Data$Type)==TRUE,]
+        # }
       }
       if(nrow(IG_Post_Data)!=0){
+        print("11")
         IG_Post_Data$Date=gsub("/", "-", IG_Post_Data$Date)
         IG_Post_Data$Date = dmy(IG_Post_Data$Date)
         IG_Post_Data = subset(IG_Post_Data, IG_Post_Data$Date>=start_date & IG_Post_Data$Date <=end_date)
-        print(paste(" #3 IG_Post_Data - ",nrow(IG_Post_Data)))
         if(nrow(IG_Post_Data)!=0){
+          print("12")
           IG_Post_Data$Date=gsub("-", "/", IG_Post_Data$Date)
           IG_Post_Data$Date=format(as.Date(IG_Post_Data$Date), "%d/%m/%Y")
           IG_Post_Data = add_mscore(IG_Post_Data,"IG")
@@ -719,16 +791,20 @@ server=shinyServer(function(input, output, session){
           
           IG_Post_Data = subset(IG_Post_Data,IG_Post_Data$Username == influencer_name )
           if(nrow(IG_Post_Data)!=0){
+            print("13")
             #IG_Post_Data=subset(IG_Post_Data, as.numeric(sapply(strsplit(as.character(IG_Post_Data$Date), split="/"),tail, n=1)) == input$year_ht )
             if(nrow(IG_Post_Data)!=0){
+              print("14")
               #IG_Post_Data = subset(IG_Post_Data,tolower(month.abb[as.numeric(sapply(strsplit(as.character(IG_Post_Data$Date), split="/"),'[',2))]) == tolower(input$month_ht) )
               if(nrow(IG_Post_Data)!=0){
+                print("15")
                 data=select(IG_Post_Data,Date,Caption,Earned_Effective_Reach,Engagement,`Engagement Rate`,sentiment_keyword,mscore,`Media URL`,Media,Views,Type)
                 
                 names(data)=c('Date','Description','Earned Effective Reach','Engagement','Engagement Rate','Sentiment','M-SCORE','URL','POST_URL',"Views","Type")
                 
                 data=data[rev(order(data$Engagement)),c('Date','Description','Type','Views','Earned Effective Reach','Engagement','Engagement Rate','Sentiment','M-SCORE','URL','POST_URL')]
                 if(flag==1){
+                  print("16")
                   data_IG=data
                 }
               }
@@ -752,7 +828,8 @@ server=shinyServer(function(input, output, session){
       }
     }
     if(is.null(data)== FALSE  ){
-      height = " height=\"52\" height=\"52\"></img>"
+      print("17")
+      height = " height=\"42\" height=\"42\"></img>"
       data$picture_str = paste0("\"",data$URL,"\"")
       #data$post = paste("<a href=",data$POST_URL,"><img class='img-circle' src=",data$picture_str,height)
       data$post = paste("<a href=",data$POST_URL,"target=_blank","><img src=",data$picture_str,height)
@@ -760,12 +837,17 @@ server=shinyServer(function(input, output, session){
       data$POST_URL=NULL
       data$picture_str=NULL
       #print(paste0("<img src=",image,height))
-      names(data)=c('DATE','DESCRIPTION',"TYPE","VIEWS",'EARNED EFFECTIVE REACH','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','M-SCORE','POST')
-      data <- data[,c("DATE", "POST", "DESCRIPTION","TYPE","VIEWS",'EARNED EFFECTIVE REACH','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','M-SCORE')]
+      names(data)=c('DATE','DESCRIPTION',"TYPE","VIEWS",'EARNED EFFECTIVE REACH','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','MSCORE','POST')
+      data <- data[,c("DATE", "POST", "DESCRIPTION","TYPE","VIEWS",'EARNED EFFECTIVE REACH','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','MSCORE')]
+      
+      data$DATE=gsub("/", "-", data$DATE)
+      data$DATE=dmy(data$DATE)
+      data$DATE=gsub("-", "/", data$DATE)
+      
     }else{
       data=NULL
       data <- data.frame(matrix(ncol = 10, nrow = 0))
-      x <- c("DATE", "POST", "DESCRIPTION","TYPE","VIEWS",'EARNED EFFECTIVE REACH','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','M-SCORE')
+      x <- c("DATE", "POST", "DESCRIPTION","TYPE","VIEWS",'EARNED EFFECTIVE REACH','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','MSCORE')
       colnames(data) <- x
       #View(data)
       
@@ -775,14 +857,11 @@ server=shinyServer(function(input, output, session){
     
     data$VIEWS[is.na(data$VIEWS)] <- "-"
     
-    data$`EARNED EFFECTIVE REACH` = format(data$`EARNED EFFECTIVE REACH`,big.mark=",",scientific=FALSE)
-    data$ENGAGEMENT               = format(data$ENGAGEMENT ,big.mark=",",scientific=FALSE)
-    data$`ENGAGEMENT RATE`        = format(data$`ENGAGEMENT RATE` ,big.mark=",",scientific=FALSE)
-    data$`M-SCORE`                = format(data$`M-SCORE` ,big.mark=",",scientific=FALSE)
-    data$VIEWS                    = format(data$VIEWS ,big.mark=",",scientific=FALSE)
-    
-    
-    print("end of the method get_sk2_data")
+    # data$`EARNED EFFECTIVE REACH` = format(data$`EARNED EFFECTIVE REACH`,big.mark=",",scientific=FALSE)
+    # data$ENGAGEMENT               = format(data$ENGAGEMENT ,big.mark=",",scientific=FALSE)
+    # data$`ENGAGEMENT RATE`        = format(data$`ENGAGEMENT RATE` ,big.mark=",",scientific=FALSE)
+    # data$`M-SCORE`                = format(data$`M-SCORE` ,big.mark=",",scientific=FALSE)
+    # data$VIEWS                    = format(data$VIEWS ,big.mark=",",scientific=FALSE)
     return (data)
     
   })
@@ -817,15 +896,7 @@ server=shinyServer(function(input, output, session){
   
   ######################### OUTPUT METHODS #######################
   
-  output$abc_test <- renderText({ 
-    
-    
-    paste0("Seq:", "d$seq", "<br>",
-           "Value:", "d$value", "<br>",
-           "Company:", "d$name")
-    
-  })
-  
+
   #influencer screen
   output$influencer_name1 <- renderText({
     Sys.setlocale(category = "LC_CTYPE", locale = "chs")
@@ -833,13 +904,13 @@ server=shinyServer(function(input, output, session){
     if (is.null(input$select_metric_inf)) { 
       return() }
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 <- reactive_return_getTop10Infleuncer_EER()
     }
-    name = as.character(top10$Infleuncer[2])
+    name = as.character(top10$Infleuncer[1])
     name
     
   })
@@ -847,7 +918,7 @@ server=shinyServer(function(input, output, session){
     if (is.null(input$select_metric_inf)) { 
       return() }
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -861,7 +932,7 @@ server=shinyServer(function(input, output, session){
   output$influencer_name3 <- renderText({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -873,7 +944,7 @@ server=shinyServer(function(input, output, session){
   output$influencer_name4 <- renderText({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -886,7 +957,7 @@ server=shinyServer(function(input, output, session){
   output$influencer_name5 <- renderText({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -899,7 +970,7 @@ server=shinyServer(function(input, output, session){
   output$influencer_name6 <- renderText({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -912,7 +983,7 @@ server=shinyServer(function(input, output, session){
   output$influencer_name7 <- renderText({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -925,7 +996,7 @@ server=shinyServer(function(input, output, session){
   output$influencer_name8 <- renderText({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -937,7 +1008,7 @@ server=shinyServer(function(input, output, session){
   output$influencer_name9 <- renderText({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -954,7 +1025,7 @@ server=shinyServer(function(input, output, session){
     
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -963,7 +1034,7 @@ server=shinyServer(function(input, output, session){
     if(nrow(top10)==0){
       name=NULL
     }else{
-      name = as.character(top10$Infleuncer[9])
+      name = as.character(top10$Infleuncer[10])
     }
     name
   })
@@ -972,7 +1043,7 @@ server=shinyServer(function(input, output, session){
     
     if (is.null(v$button_clicked)) return()
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -1072,7 +1143,7 @@ server=shinyServer(function(input, output, session){
   output$instagram_details <- renderUI({
     
     if (is.null(v$button_clicked)) return()
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -1260,7 +1331,7 @@ server=shinyServer(function(input, output, session){
     
     if (is.null(v$button_clicked)) return()
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       flag=1
       
@@ -1269,7 +1340,6 @@ server=shinyServer(function(input, output, session){
       top10 <- reactive_return_getTop10Infleuncer_EER()
       flag=2
     }
-    
     if(nrow(top10)!=0){
       if (v$button_clicked == "button1"){
         name=as.character(top10[1,"Infleuncer"])
@@ -1367,7 +1437,7 @@ server=shinyServer(function(input, output, session){
       if(flag==1){
         score=paste("<b>MSCORE-</b>", score)
       }else{
-        score=paste("<b>Earned Engagement Rate-</b>", eer)
+        score=paste("<b>Earned ER-</b>", eer)
       }
       percentage = format(round(SK2_post_count*100/ total_post_count , 2))
       #percentage_text=paste("SK-II POSTS-", percentage, "%",sep="")
@@ -1390,20 +1460,20 @@ server=shinyServer(function(input, output, session){
     if (is.null(input$select_metric_inf)) { 
       return() }
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
-      
       score=as.numeric(top10[1,"MSCORE"])
       score = format(score,big.mark=",",scientific=FALSE)
-      value = paste("M-SCORE-", score)
+      value = paste("MSCORE-", score)
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 <- reactive_return_getTop10Infleuncer_EER()
+      
       EER= as.numeric(top10[1,"EER"])
       EER = format(EER,big.mark=",",scientific=FALSE)
-      value = paste("EARNED EFFECTIVE REACH-", EER)
+      value = paste("EARNED ER-", EER)
     }
-    
+   
     value
   })
   output$influencer_mscore2 <-renderText({
@@ -1411,18 +1481,18 @@ server=shinyServer(function(input, output, session){
     if (is.null(input$select_metric_inf)) { 
       return() }
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
       score=as.numeric(top10[2,"MSCORE"])
       score = format(score,big.mark=",",scientific=FALSE)
-      value = paste("M-SCORE-", score)
+      value = paste("MSCORE-", score)
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 <- reactive_return_getTop10Infleuncer_EER()
       EER= as.numeric(top10[2,"EER"])
       EER = format(EER,big.mark=",",scientific=FALSE)
-      value = paste("EARNED EFFECTIVE REACH-", EER)
+      value = paste("EARNED ER-", EER)
     }
     
     value
@@ -1433,18 +1503,18 @@ server=shinyServer(function(input, output, session){
     if (is.null(input$select_metric_inf)) { 
       return() }
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
       score=as.numeric(top10[3,"MSCORE"])
       score = format(score,big.mark=",",scientific=FALSE)
-      value = paste("M-SCORE-", score)
+      value = paste("MSCORE-", score)
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 <- reactive_return_getTop10Infleuncer_EER()
       EER= as.numeric(top10[3,"EER"])
       EER = format(EER,big.mark=",",scientific=FALSE)
-      value = paste("EARNED EFFECTIVE REACH-", EER)
+      value = paste("EARNED ER-", EER)
     }
     
     value
@@ -1455,18 +1525,18 @@ server=shinyServer(function(input, output, session){
     if (is.null(input$select_metric_inf)) { 
       return() }
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
       score=as.numeric(top10[4,"MSCORE"])
       score = format(score,big.mark=",",scientific=FALSE)
-      value = paste("M-SCORE-", score)
+      value = paste("MSCORE-", score)
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 <- reactive_return_getTop10Infleuncer_EER()
       EER= as.numeric(top10[4,"EER"])
       EER = format(EER,big.mark=",",scientific=FALSE)
-      value = paste("EARNED EFFECTIVE REACH-", EER)
+      value = paste("EARNED ER-", EER)
     }
     
     value
@@ -1478,18 +1548,18 @@ server=shinyServer(function(input, output, session){
     if (is.null(input$select_metric_inf)) { 
       return() }
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
       score=as.numeric(top10[5,"MSCORE"])
       score = format(score,big.mark=",",scientific=FALSE)
-      value = paste("M-SCORE-", score)
+      value = paste("MSCORE-", score)
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 <- reactive_return_getTop10Infleuncer_EER()
       EER= as.numeric(top10[5,"EER"])
       EER = format(EER,big.mark=",",scientific=FALSE)
-      value = paste("EARNED EFFECTIVE REACH-", EER)
+      value = paste("EARNED ER-", EER)
     }
     
     value
@@ -1500,18 +1570,18 @@ server=shinyServer(function(input, output, session){
     if (is.null(input$select_metric_inf)) { 
       return() }
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
       score=as.numeric(top10[6,"MSCORE"])
       score = format(score,big.mark=",",scientific=FALSE)
-      value = paste("M-SCORE-", score)
+      value = paste("MSCORE-", score)
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 <- reactive_return_getTop10Infleuncer_EER()
       EER= as.numeric(top10[6,"EER"])
       EER = format(EER,big.mark=",",scientific=FALSE)
-      value = paste("EARNED EFFECTIVE REACH-", EER)
+      value = paste("EARNED ER-", EER)
     }
     
     value
@@ -1522,18 +1592,18 @@ server=shinyServer(function(input, output, session){
     if (is.null(input$select_metric_inf)) { 
       return() }
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
       score=as.numeric(top10[7,"MSCORE"])
       score = format(score,big.mark=",",scientific=FALSE)
-      value = paste("M-SCORE-", score)
+      value = paste("MSCORE-", score)
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 <- reactive_return_getTop10Infleuncer_EER()
       EER= as.numeric(top10[7,"EER"])
       EER = format(EER,big.mark=",",scientific=FALSE)
-      value = paste("EARNED EFFECTIVE REACH-", EER)
+      value = paste("EARNED ER-", EER)
     }
     
     value
@@ -1544,18 +1614,18 @@ server=shinyServer(function(input, output, session){
     if (is.null(input$select_metric_inf)) { 
       return() }
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
       score=as.numeric(top10[8,"MSCORE"])
       score = format(score,big.mark=",",scientific=FALSE)
-      value = paste("M-SCORE-", score)
+      value = paste("MSCORE-", score)
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 <- reactive_return_getTop10Infleuncer_EER()
       EER= as.numeric(top10[8,"EER"])
       EER = format(EER,big.mark=",",scientific=FALSE)
-      value = paste("EARNED EFFECTIVE REACH-", EER)
+      value = paste("EARNED ER-", EER)
     }
     
     value
@@ -1566,18 +1636,18 @@ server=shinyServer(function(input, output, session){
     if (is.null(input$select_metric_inf)) { 
       return() }
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
       score=as.numeric(top10[9,"MSCORE"])
       score = format(score,big.mark=",",scientific=FALSE)
-      value = paste("M-SCORE-", score)
+      value = paste("MSCORE-", score)
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 <- reactive_return_getTop10Infleuncer_EER()
       EER= as.numeric(top10[9,"EER"])
       EER = format(EER,big.mark=",",scientific=FALSE)
-      value = paste("EARNED EFFECTIVE REACH-", EER)
+      value = paste("EARNED ER-", EER)
     }
     
     value
@@ -1589,18 +1659,18 @@ server=shinyServer(function(input, output, session){
     if (is.null(input$select_metric_inf)) { 
       return() }
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
       score=as.numeric(top10[10,"MSCORE"])
       score = format(score,big.mark=",",scientific=FALSE)
-      value = paste("M-SCORE-", score)
+      value = paste("MSCORE-", score)
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 <- reactive_return_getTop10Infleuncer_EER()
-      EER= as.numeric(top10[9,"EER"])
+      EER= as.numeric(top10[10,"EER"])
       EER = format(EER,big.mark=",",scientific=FALSE)
-      value = paste("EARNED EFFECTIVE REACH-", EER)
+      value = paste("EARNED ER-", EER)
     }
     
     value
@@ -1790,8 +1860,7 @@ server=shinyServer(function(input, output, session){
     }
     if (nrow(IG_Post_Data_image_df)==0 & nrow(IG_Post_Data_video_df)==0){
       IG_Post_Data_sk2 = data.frame(matrix(ncol = 5, nrow = 0))
-    }
-    else if (nrow(IG_Post_Data_image_df)!=0 & nrow(IG_Post_Data_video_df)!=0){
+    }else if (nrow(IG_Post_Data_image_df)!=0 & nrow(IG_Post_Data_video_df)!=0){
       IG_Post_Data_sk2 = rbind(IG_Post_Data_image_df,IG_Post_Data_video_df)
     }else if(nrow(IG_Post_Data_image_df) == 0 & nrow(IG_Post_Data_video_df)!=0){
       IG_Post_Data_sk2 = IG_Post_Data_video_df
@@ -1807,8 +1876,11 @@ server=shinyServer(function(input, output, session){
         group_by(Username) %>%
         arrange(desc(Earned_Effective_Reach)) %>%
         slice(c(1))
+      
+      highest_reach_per_kol["EER_percent"] = highest_reach_per_kol$Earned_Effective_Reach/13167000*100
       IG_EER = sainsburry(highest_reach_per_kol)
-      v$instagram_EER =  format(round(IG_EER,2))
+      y=IG_EER*13167000
+      v$instagram_EER =  format(round(y,2)) 
       
       
     }
@@ -1819,7 +1891,6 @@ server=shinyServer(function(input, output, session){
     TW_Post_Data = reactive_TW_Post_Data
     TW_Post_Data = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==TRUE,]
     
-    ###added
     
     ###
     if (nrow(TW_Post_Data)!=0){
@@ -1838,28 +1909,61 @@ server=shinyServer(function(input, output, session){
           TW_Post_Data_image_df=TW_Post_Data_image_df[, c("Username","Date","Profile Image","Post Image","Earned_Effective_Reach" )]
           #TW_EER=sum(TW_Post_Data_image_df$Earned_Effective_Reach)
           #v$twitter_EER =  format(round(TW_EER,2))
-          
-          highest_reach_per_kol_TW= TW_Post_Data_image_df %>%
-            group_by(Username) %>%
-            arrange(desc(Earned_Effective_Reach)) %>%
-            slice(c(1))
-          TW_EER = sainsburry(highest_reach_per_kol_TW)
-          v$twitter_EER =  format(round(TW_EER,2))
+        }
+      }
+      TW_Post_Data_video_df = TW_Post_Data[grepl(paste(c("Video"), collapse = "|"), TW_Post_Data$Type)==TRUE,]
+      if (nrow(TW_Post_Data_video_df)!=0){
+        TW_Post_Data_video_df=merge(TW_Post_Data_video_df,TW_Page_Data, by  = c("Username","Date"))
+        if(nrow(TW_Post_Data_video_df)!=0){
+          TW_Post_Data_video_df$Earned_Effective_Reach=0.014 * TW_Post_Data_video_df["Views"] 
+          TW_Post_Data_video_df$Earned_Effective_Reach = TW_Post_Data_video_df$Earned_Effective_Reach$Views
+          TW_Post_Data_video_df=TW_Post_Data_video_df[, c("Username","Date","Profile Image","Post Image","Earned_Effective_Reach" )]
           
         }
       }
+      
+      print("comes here")
+      print(nrow(TW_Post_Data_image_df))
+      print(nrow(TW_Post_Data_video_df))
+      if (nrow(TW_Post_Data_image_df)==0 & nrow(TW_Post_Data_video_df)==0){
+        print("1")
+        TW_Post_Data_sk2 = data.frame(matrix(ncol = 5, nrow = 0))
+      }else if (nrow(TW_Post_Data_image_df)!=0 & nrow(TW_Post_Data_video_df)!=0){
+        print("2")
+        TW_Post_Data_sk2 = rbind(TW_Post_Data_image_df,TW_Post_Data_video_df)
+      }else if(nrow(TW_Post_Data_image_df) == 0 & nrow(TW_Post_Data_video_df)!=0){
+        print("3")
+        TW_Post_Data_sk2 = TW_Post_Data_video_df
+      }else if(nrow(TW_Post_Data_video_df) == 0 & nrow(TW_Post_Data_image_df)!=0){
+        print("4")
+        TW_Post_Data_sk2 = TW_Post_Data_image_df
+      }
+      print(nrow(TW_Post_Data_sk2))
+      if(nrow(TW_Post_Data_sk2)!=0){
+        highest_reach_per_kol_TW= TW_Post_Data_sk2 %>%
+          group_by(Username) %>%
+          arrange(desc(Earned_Effective_Reach)) %>%
+          slice(c(1))
+        highest_reach_per_kol_TW["EER_percent"] = highest_reach_per_kol_TW$Earned_Effective_Reach/13167000*100
+        
+        TW_EER = sainsburry(highest_reach_per_kol_TW)
+        x=TW_EER*13167000
+        v$twitter_EER =  format(round(x,2)) 
+      }
+          
     }
-    
-    total_EER = sum(TW_EER+IG_EER)
-    #total_EER = sainsbury_total(TW_EER,IG_EER)
-    
-    format(total_EER,big.mark=",",scientific=FALSE)
+     
+    total_EER = sainsbury_total(TW_EER,IG_EER)
+    total_EER = total_EER*13167000
+    japan_EER<<-round(total_EER,2)
+    format(round(total_EER,2),big.mark=",",scientific=FALSE)
     #reach = format(round(total_EER/1000000, 2))
     #paste(reach,"MM")
     
   })
   
   output$top_platform <- renderText({
+    value_type<<-""
     list_details=reactive_top_influencer_image_url()
     if (length(list_details) !=0){
       platform = as.character(list_details[3])
@@ -1872,7 +1976,9 @@ server=shinyServer(function(input, output, session){
   })
   
   output$top_post_image <- renderUI({
+    value_type<<-""
     image_list=reactive_top_influencer_image_url()
+    print(image_list)
     if (length(image_list) !=0){
       post_image = as.character(image_list[2])
       post_URL = as.character(image_list[4])
@@ -1885,16 +1991,38 @@ server=shinyServer(function(input, output, session){
     }
   })
   
+  output$top_post_text <- renderUI({
+     paste("TOP POST of",count_total_posts(reactive_IG_Post_Data,reactive_TW_Post_Data),"posts",sep=" ")
+    
+  })
+  
+  output$top_influencer_text <- renderUI({
+    #paste("TOP INFLUENCER of",count_total_influencers(reactive_IG_Post_Data,reactive_TW_Post_Data),"influencers",sep=" ")
+    #HTML(paste("TOP INFLUENCER "))
+    HTML(paste("TOP INFLUENCER",paste("of",count_total_influencers(reactive_IG_Post_Data,reactive_TW_Post_Data),"influencers",sep=" "),sep="<br/>"))
+    })
+  
+  output$demographic <- renderText({
+    HTML(paste("WOMEN 18-44 yrs "))
+    #HTML(style="text-align:center","WOMEN 18-44 yrs")    
+  })
+  
+  output$likes_comments_shares <- renderText({
+    HTML(paste("LIKES, COMMENTS & SHARES"))
+    #HTML(style="text-align:center","WOMEN 18-44 yrs")    
+  })
+
+
   
   output$top_infleuncer_image <- renderUI({
-    value <<- "top_influencer"
+    value_type<<-"top_influencer"
     image_list=reactive_top_influencer_image_url()
-    value <<- NULL
+    value_type<<-""
     if (length(image_list) !=0){
       profile_image = as.character(image_list[1])
       post_URL = as.character(unlist(image_list[4]))
       
-      tags$a(HTML(paste('<center><img class="img-circle" src=',profile_image, ' width = "180",height = "180"></center>')),HTML(paste('<center>',as.character((image_list[5])),'</center>')),href=paste(post_URL),target="_blank")
+      tags$a(HTML(paste('<center><img class="img-circle" src=',profile_image, ' width = "180",height = "100"></center>')),HTML(paste('<center>',as.character((image_list[5])),'</center>')),href=paste(post_URL),target="_blank")
       
       #tags$a(HTML(paste('<center>',as.character((image_list[5])),'</center>')),HTML(paste('<center><img src=',profile_image, ' width = "180",height = "160"></center>')),href=paste(post_URL),target="_blank")
     }else{
@@ -1928,12 +2056,14 @@ server=shinyServer(function(input, output, session){
     # url=as.character(top10[1,"PROFILE_URL"])
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 = reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 = reactive_return_getTop10Infleuncer_EER()
+      
     }
+    #View(top10)
     if (nrow(top10)!=0){
       url = as.character(top10$PROFILE_URL[1])
       url = HTML(paste('<center><img class="img-circle" src=',url, ' width = "150",height = "120"></center>'))
@@ -1946,7 +2076,7 @@ server=shinyServer(function(input, output, session){
   output$infleuncerImage2 <- renderUI({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -1964,7 +2094,7 @@ server=shinyServer(function(input, output, session){
   output$infleuncerImage3 <- renderUI({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -1982,7 +2112,7 @@ server=shinyServer(function(input, output, session){
   output$infleuncerImage4 <- renderUI({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -2000,7 +2130,7 @@ server=shinyServer(function(input, output, session){
   output$infleuncerImage5 <- renderUI({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -2018,7 +2148,7 @@ server=shinyServer(function(input, output, session){
   output$infleuncerImage6 <- renderUI({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -2037,7 +2167,7 @@ server=shinyServer(function(input, output, session){
   output$infleuncerImage7 <- renderUI({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -2055,7 +2185,7 @@ server=shinyServer(function(input, output, session){
   output$infleuncerImage8 <- renderUI({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -2073,7 +2203,7 @@ server=shinyServer(function(input, output, session){
   output$infleuncerImage9 <- renderUI({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -2091,7 +2221,7 @@ server=shinyServer(function(input, output, session){
   output$infleuncerImage10 <- renderUI({
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -2112,7 +2242,7 @@ server=shinyServer(function(input, output, session){
     if (is.null(v$button_clicked)) return()
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -2128,7 +2258,7 @@ server=shinyServer(function(input, output, session){
     if (is.null(v$button_clicked)) return()
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -2144,7 +2274,7 @@ server=shinyServer(function(input, output, session){
     if (is.null(v$button_clicked)) return()
     if (is.null(input$select_metric_inf)) { 
       return() }
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -2159,8 +2289,9 @@ server=shinyServer(function(input, output, session){
   output$selected_influencer_image <- renderUI({
     # top10 = reactive_return_getTop10Infleuncer()
     # url=as.character(top10[10,"URL"])
+    url=""
     if (is.null(v$button_clicked)) return()
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -2201,6 +2332,13 @@ server=shinyServer(function(input, output, session){
         url=as.character(top10[10,"PROFILE_URL"])
         
       }
+    }
+    print("check this thing")
+    print(is.na(url))
+    print(url)
+    print(is.null(url))
+    if(length(url)>1){
+      tags$img(src=url,width = "150",height = "180")
     }
     tags$img(src=url,width = "150",height = "180")
     # if (!is.na(url)){
@@ -2420,7 +2558,7 @@ server=shinyServer(function(input, output, session){
   #     x = data$Market,
   #     y = data$Values,
   #     type = "bar",
-  #     marker = list(color = "#E1005D"),
+  #     marker = list(color = "#E0005d"),
   #     name = toupper(reactive_return_metric())
   #   ) %>% 
   #     layout(showlegend = FALSE)%>% 
@@ -2443,7 +2581,7 @@ server=shinyServer(function(input, output, session){
   
   
   output$barplot_markettrend <- renderPlotly({
-    require(input$metric_mt)
+    #require(input$metric_mt)
     print("in the method barplot_markettrend")
     
     # TW_Post_Data = reactive_TW_Post_Data
@@ -2477,62 +2615,77 @@ server=shinyServer(function(input, output, session){
     
     if(is.null(start_date) || is.na(start_date)){ return() }
     if(is.null(end_date) || is.na(end_date)){ return() }
-    print(end_date)
     
     if (reactive_return_metric() == "Earned Effective Reach") { 
       
-      data = reactive_get_weekly_trend()
-      if(is.null(data)){ return()}
-      if (nrow(data)==0){  
-        data=data.frame(matrix(ncol = 2, nrow = 0))
-        names(data) = c("Market","Values")
-        p <- plot_ly(
-          x = data$Market,
-          y = data$Values,
-          type = "bar"
-        ) 
-        
-        return (p)  
-        
-      }
-      data=select(data,"Market","Earned_Effective_Reach")
+      # data = reactive_get_weekly_trend()
+      # if(is.null(data)){ return()}
+      # if (nrow(data)==0){  
+      #   data=data.frame(matrix(ncol = 2, nrow = 0))
+      #   names(data) = c("Market","Values")
+      #   p <- plot_ly(
+      #     x = data$Market,
+      #     y = data$Values,
+      #     type = "bar"
+      #   ) 
+      #   
+      #   return (p)  
+      #   
+      # }
+      # data=select(data,"Market","Earned_Effective_Reach")
+      # 
+      # if (nrow(data)==0){  
+        # data=data.frame(matrix(ncol = 2, nrow = 0))
+        # names(data) = c("Market","Values")
+        # p <- plot_ly(
+        #   x = data$Market,
+        #   y = data$Values,
+        #   type = "bar"
+        # )
+        # return(p)
+      # }
+      # data = aggregate(data$Earned_Effective_Reach, by=list(Market=data$Market), FUN=sum)
+      # if (nrow(data)==0){  
+      #   
+      #   data=data.frame(matrix(ncol = 2, nrow = 0))
+      #   names(data) = c("Market","Values")
+      #   p <- plot_ly(
+      #     x = data$Market,
+      #     y = data$Values,
+      #     type = "bar"
+      #   ) 
+      #   return(p)
+      # }
+      # names(data) = c("Market","EER")
+      # japan_EER = as.numeric(data[1,2])
+      if (japan_EER==0) { 
+          data=data.frame(matrix(ncol = 2, nrow = 0))
+          names(data) = c("Market","Values")
+          p <- plot_ly(
+            x = data$Market,
+            y = data$Values,
+            type = "bar"
+          )
+          return(p)
+      }else{
       
-      if (nrow(data)==0){  
         data=data.frame(matrix(ncol = 2, nrow = 0))
-        names(data) = c("Market","Values")
-        p <- plot_ly(
-          x = data$Market,
-          y = data$Values,
-          type = "bar"
-        ) 
-        return(p)
-      }
-      data = aggregate(data$Earned_Effective_Reach, by=list(Market=data$Market), FUN=sum)
-      if (nrow(data)==0){  
+        names(data) = c("Market","EER")
         
-        data=data.frame(matrix(ncol = 2, nrow = 0))
-        names(data) = c("Market","Values")
-        p <- plot_ly(
-          x = data$Market,
-          y = data$Values,
-          type = "bar"
-        ) 
-        return(p)
+        data[nrow(data) + 1,] = c("Japan",japan_EER  )
+        data[nrow(data) + 1,] = c("Korea",japan_EER * .6514 )
+        data[nrow(data) + 1,] = c("Taiwan",japan_EER * .0155)
+        data[nrow(data) + 1,] = c("HongKong",japan_EER * .0032)
+        data[nrow(data) + 1,] = c("Indonesia",japan_EER * 0.0133)
+        data[nrow(data) + 1,] = c("Malaysia",japan_EER * 0.0103)
+        data[nrow(data) + 1,] = c("Thailand",japan_EER * 0.0268)
+        data[nrow(data) + 1,] = c("Singapore",japan_EER * 0.0013)
+        data$EER = round(as.numeric(data$EER),2)
       }
-      names(data) = c("Market","EER")
-      japan_EER = as.numeric(data[1,2])
-      data[nrow(data) + 1,] = c("Korea",japan_EER * .6514 )
-      data[nrow(data) + 1,] = c("Taiwan",japan_EER * .0155)
-      data[nrow(data) + 1,] = c("HongKong",japan_EER * .0032)
-      data[nrow(data) + 1,] = c("Indonesia",japan_EER * 0.0133)
-      data[nrow(data) + 1,] = c("Malaysia",japan_EER * 0.0103)
-      data[nrow(data) + 1,] = c("Thailand",japan_EER * 0.0268)
-      data[nrow(data) + 1,] = c("Singapore",japan_EER * 0.0013)
-      data$EER = round(as.numeric(data$EER),2)
+      
+      
     }
     if (reactive_return_metric() == "Engagement"){
-      
-      print("entering engagment")
       
       # FB_Post_Data = select(FB_Post_Data, Date,Label1,Engagement)
       # FB_Post_Data = as.data.frame(FB_Post_Data)
@@ -2541,12 +2694,10 @@ server=shinyServer(function(input, output, session){
       TW_Post_Data = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==TRUE,]
       
       if(nrow(TW_Post_Data)!=0){
-        print("1")
         TW_Post_Data$Date=gsub("/", "-", TW_Post_Data$Date)
         TW_Post_Data$Date = dmy(TW_Post_Data$Date)
         TW_Post_Data = subset(TW_Post_Data, TW_Post_Data$Date>=start_date & TW_Post_Data$Date <=end_date)
         if(nrow(TW_Post_Data)!=0){
-          print("2")
           TW_Post_Data$Date=gsub("-", "/", TW_Post_Data$Date)
           TW_Post_Data$Date=format(as.Date(TW_Post_Data$Date), "%d/%m/%Y")
           TW_Post_Data$Engagement=  TW_Post_Data["Reply Count"] + TW_Post_Data["Favorite Count"] + TW_Post_Data["Retweet Count"]
@@ -2559,6 +2710,7 @@ server=shinyServer(function(input, output, session){
       
       IG_Post_Data = reactive_IG_Post_Data
       IG_Post_Data = IG_Post_Data[grepl("sk2", IG_Post_Data$Label1)==TRUE,]
+      
       if(nrow(IG_Post_Data)!=0){
         IG_Post_Data$Date=gsub("/", "-", IG_Post_Data$Date)
         IG_Post_Data$Date = dmy(IG_Post_Data$Date)
@@ -2576,7 +2728,7 @@ server=shinyServer(function(input, output, session){
         data=rbind(TW_Post_Data,IG_Post_Data)
       }
       if (nrow(TW_Post_Data)==0 & nrow(IG_Post_Data)==0){
-        data = NULL
+        data = data.frame()
       }else if (nrow(TW_Post_Data)==0){
         data = IG_Post_Data
       }else if(nrow(IG_Post_Data)==0){
@@ -2585,7 +2737,6 @@ server=shinyServer(function(input, output, session){
       
       
       if (nrow(data)==0){ 
-        
         data=data.frame(matrix(ncol = 2, nrow = 0))
         names(data) = c("Market","Values")
         p <- plot_ly(
@@ -2681,12 +2832,14 @@ server=shinyServer(function(input, output, session){
     if (nrow(data)==0 ) {  
       data=data.frame(matrix(ncol = 2, nrow = 0))
     }
+    
     names(data) = c("Market","Values")
+    data$Values = round(as.numeric(data$Values),2)
     p <- plot_ly(
       x = data$Market,
       y = data$Values,
       type = "bar",
-      marker = list(color = "#E1005D"),
+      marker = list(color = "#E0005d"),
       name = toupper(reactive_return_metric())
     ) %>% 
       layout(showlegend = FALSE)%>% 
@@ -2696,7 +2849,7 @@ server=shinyServer(function(input, output, session){
           #color = "#ff9999"
         ),
         xaxis = list(
-          title = "Country"
+          title = ""
           #color = "#ff9999"
         )
       )%>% config(displayModeBar = F) %>%
@@ -2731,7 +2884,7 @@ server=shinyServer(function(input, output, session){
     
     if (length(v$platform_params)==0) return() #included this to avoid the rendering
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -2748,54 +2901,48 @@ server=shinyServer(function(input, output, session){
   })
   
   output$select_metric = renderUI({
-    selectInput('metric_mt', '', choices = c("Earned Effective Reach","Engagement"),width="auto" )
+    selectInput('metric_mt', '', choices = c("Engagement","Earned Effective Reach"),width="auto" )
   })
   output$select_metric_mrp = renderUI({
-    selectInput('metric_mrp', '', choices = c("Earned Effective Reach","Engagement","Sentiment","M-Score"),width="400px" )
+    selectInput('metric_mrp', '', choices = c("Earned Effective Reach","Engagement","Sentiment","MScore"),width="400px" )
   })
   TIP <- reactiveValues()
   observe({
     if (is.null(v$instagram_EER)) { return()}
     #insta <- paste("Instagram: ",v$instagram_EER, "MM" )
-    insta   <- paste(tags$img(src='instagram.png',width = "30",height = "30"),v$instagram_EER )
-    twitter <- paste(tags$img(src='twitter.png',width = "30",height = "30"),v$twitter_EER)
+    insta   <- paste(tags$img(src='instagram.png',width = "30",height = "30"),(format(as.numeric(v$instagram_EER),big.mark=",",scientific=FALSE)) )
+    twitter <- paste(tags$img(src='twitter.png',width = "30",height = "30"),(format(as.numeric(v$twitter_EER),big.mark=",",scientific=FALSE)))
     TIP$EER_text=HTML(paste(insta,twitter, sep="<br/><br/>"))
     
     
-    insta_E   <- paste(tags$img(src='instagram.png',width = "30",height = "30"),v$instagram_E)
-    twitter_E <- paste(tags$img(src='twitter.png',width = "30",height = "30"),v$twitter_E)
+    insta_E   <- paste(tags$img(src='instagram.png',width = "30",height = "30"),(format(as.numeric(v$instagram_E),big.mark=",",scientific=FALSE)))
+    twitter_E <- paste(tags$img(src='twitter.png',width = "30",height = "30"),(format(as.numeric(v$twitter_E),big.mark=",",scientific=FALSE)))
     TIP$Engagment_text=HTML(paste(insta_E,twitter_E, sep="<br/><br/>"))
     
   })
   
   output$EER_box = renderUI({
     tags$style(".fa-info-circle {color:#ffffff }")
-    box(title=strong("EARNED EFFECTIVE REACH"),div(id="reach_text",h1(textOutput("display_total_reach")),style = "color: #E1005D;"),solidHeader = TRUE,width = 3,height=250 ,
+    box(title=strong(("PULL REACH"),style = "font-family: 'Roboto Condensed', sans-serif;"),div(id="reach_text",h1(textOutput("display_total_reach")),h5(textOutput("demographic")),style = "color: #E0005d;font-family: 'Roboto Condensed', sans-serif;"),solidHeader = TRUE,width = 3,height=270 ,
         tipify(el = icon(name = "info-circle", lib = "font-awesome"), title = TIP$EER_text))
-    #box(title=strong("EARNED EFFECTIVE REACH"),id="reach_text",h1(textOutput("display_total_reach")),style = "color: #E1005D;",solidHeader = TRUE,width = 3,height=250 )
+    #box(title=strong("EARNED EFFECTIVE REACH"),id="reach_text",h1(textOutput("display_total_reach")),style = "color: #E0005d;",solidHeader = TRUE,width = 3,height=250 )
   })
   
   
   output$dynamic_UI_box <- renderUI({
     #.h5:hover { background-color:'#006db9' }
-      
+      print("in the method dynamic_UI_box()")
       filtered_posts_df=filter_posts()
-      option_selected = as.character(reactive_return_count_asset())
-      if(is.null(option_selected) | is.na(option_selected)) { return()}
-      print("CHECK MADI")
+      if(is.null(filtered_posts_df)) { return()}
       
-      print("Entering the method dynamic_UI_box")
-      print(paste("nrow(filtered_posts_df)-",nrow(filtered_posts_df),sep=""))
+      option_selected = as.character(reactive_return_count_asset())
+      if(is.null(option_selected) | is.na(option_selected) ) { return()}
+      
       if(nrow(filtered_posts_df)!=0){
-        print("entered IF")
         filtered_posts_df$`EARNED EFFECTIVE REACH`[(filtered_posts_df$`EARNED EFFECTIVE REACH` - floor(filtered_posts_df$`EARNED EFFECTIVE REACH`)) <.5]  = floor(filtered_posts_df$`EARNED EFFECTIVE REACH`[(filtered_posts_df$`EARNED EFFECTIVE REACH` - floor(filtered_posts_df$`EARNED EFFECTIVE REACH`)) < .5])
         filtered_posts_df$`EARNED EFFECTIVE REACH`[(filtered_posts_df$`EARNED EFFECTIVE REACH` - floor(filtered_posts_df$`EARNED EFFECTIVE REACH`)) >= .5]= ceiling(filtered_posts_df$`EARNED EFFECTIVE REACH`[(filtered_posts_df$`EARNED EFFECTIVE REACH` - floor(filtered_posts_df$`EARNED EFFECTIVE REACH`)) >= .5])
         # View(filtered_posts_df)
-        
-        print(paste("option_selected",option_selected,sep="-"))
-        
         if (grepl("All", option_selected)==TRUE){
-          print("in this grepl")
           if (nrow(filtered_posts_df)!=0){
             count_selected = nrow(filtered_posts_df)
           }
@@ -2809,16 +2956,17 @@ server=shinyServer(function(input, output, session){
           return (title)
         }
         else{
-          print("out here")
           if (grepl("All", option_selected)==TRUE){
             numBoxes=nrow(filtered_posts_df)
           }else{
             if (count_selected <=nrow(filtered_posts_df)){
-              numBoxes=as.integer(reactive_return_count_asset())
+              #numBoxes=as.integer(reactive_return_count_asset())
+              numBoxes=as.integer((unlist(strsplit(as.character(reactive_return_count_asset()), "\\s"))[1]))
             }else{
               numBoxes=nrow(filtered_posts_df)
             }
           }
+          if(is.na(numBoxes)) { return() }
           LL <- vector("list",numBoxes)
           for(i in 1:numBoxes){
             
@@ -2857,7 +3005,7 @@ server=shinyServer(function(input, output, session){
               HTML(paste('<center>',post_url,'</center>')),
               
               HTML(paste(platform, type,'on ',date,'at ',time)),
-              div("desc",paste(substr(description,0,150),"...",sep="")),
+              div("desc",paste(substr(description,0,50),"...",sep="")),
               #tags$h5(description,style="text-overflow:ellipsis;overflow: hidden ;white-space: nowrap"),
               # tags$h5
               #   (tags$style(
@@ -2890,7 +3038,7 @@ server=shinyServer(function(input, output, session){
                 #column(3,("'<span title=\"' + comments + '\">' + comments(0, 30) + '...</span>' : comments;"))
               ),
               fluidRow( 
-                column(7,HTML("<b>M-SCORE:</b>")),
+                column(7,HTML("<b>MSCORE:</b>")),
                 column(3,HTML(mscore))
               ),
               
@@ -2916,11 +3064,11 @@ server=shinyServer(function(input, output, session){
   })
   output$Engagment_box = renderUI({
     tags$style(".fa-info-circle {color:#ffffff }")
-    box(title=strong("ENGAGEMENT"),div(id="engagement_text",h1(textOutput("display_total_engagement")),style = "color: #E1005D;"),solidHeader = TRUE,width = 3,height=250 ,
+    box(title=strong(("ENGAGEMENT"),style = "font-family: 'Roboto Condensed', sans-serif;"),div(id="engagement_text",h1(textOutput("display_total_engagement")),h5(textOutput("likes_comments_shares")),style = "color: #E0005d;font-family: 'Roboto Condensed', sans-serif;"),solidHeader = TRUE,width = 3,height=270 ,
         tipify(el = icon(name = "info-circle", lib = "font-awesome"), title = TIP$Engagment_text))
   })
   output$select_platform = renderUI({
-    selectInput('platform_summary', '', choices = c("Twitter","Instagram","All"),width="80px")
+    selectInput('platform_summary', '', choices = c("All","Twitter","Instagram"),width="80px")
   })
   output$select_market = renderUI({
     selectInput('Market_ps', '', reactive_market_ps(),width="120px")
@@ -2939,7 +3087,8 @@ server=shinyServer(function(input, output, session){
   })
   
   output$display_typeofpost_post = renderUI({
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if(is.null(input$select_metric_inf)) { return()}
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -2957,7 +3106,7 @@ server=shinyServer(function(input, output, session){
   
   output$display_platform = renderUI({
     if (length(v$platform_params)==0) return()
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -2971,7 +3120,7 @@ server=shinyServer(function(input, output, session){
   
   output$display_dimension = renderUI({
     if (length(v$display_type)==0) return()
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -2986,7 +3135,7 @@ server=shinyServer(function(input, output, session){
   output$display_month = renderUI({
     if (length(v$display_month)==0) return()
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -3003,7 +3152,7 @@ server=shinyServer(function(input, output, session){
   
   output$display_typeofposts = renderUI({
     if (length(v$display_typeofposts)==0) return()
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -3016,45 +3165,42 @@ server=shinyServer(function(input, output, session){
   })
   
   output$historical_trend_chart <- renderPlotly({
+    print("inside historical_trend_chart()")
+    if (is.null(input$select_metric_inf)) { return()}
     
-    
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
       top10 <- reactive_return_getTop10Infleuncer_EER()
     }
+    
     if(nrow(top10)!=0){
-      
-      
-      req(input$platform_ht)
-      req(input$metric_ht)
-      req(input$typeofposts_ht)
-      req(input$month_ht)
-      req(input$year_ht)
-      
+      #req(input$platform_ht)
+      #req(input$metric_ht)
+      #req(input$typeofposts_ht)
+      #req(input$month_ht)
+      #req(input$year_ht)
       
       trend_data=get_historical_trend_data()
-      # print(nrow(trend_data))
+      print("trend_data")
       if(is.null((trend_data)) ){
-        #print("trend_data is nUll")
         trend_data <- data.frame(matrix(ncol = 2, nrow = 0))
         x <- c("Metric_data", "Date")
         colnames(trend_data) <- x
         
         # p <- plot_ly(trend_data, y = trend_data[,c("Metric_data")], x = trend_data[,c("Date")], type = 'scatter', mode = 'lines',
-        #          line = list(color = "#E1005D")) 
+        #          line = list(color = "#E0005d")) 
         
       }
       else{
-        # print("in ELSE")
         
         names(trend_data) = c("Date","Metric_data")
         
         trend_data=as.data.frame(trend_data)
         # p <- plot_ly(trend_data, y = trend_data[,c("Metric_data")], x = trend_data[,c("Date")], type = 'scatter', mode = 'lines',
-        #              line = list(color = "#E1005D")) 
+        #              line = list(color = "#E0005d")) 
       }
       
       p <- plot_ly(
@@ -3062,7 +3208,7 @@ server=shinyServer(function(input, output, session){
         y = trend_data$Metric_data,
         name = "Trend Data",
         type = "bar",
-        marker = list(color = "#E1005D")
+        marker = list(color = "#E0005d")
         
       ) %>% 
         layout(
@@ -3087,7 +3233,7 @@ server=shinyServer(function(input, output, session){
     
     # print (v$historical_trend)
     if (length(v$historical_trend)==0) return()
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
     }
     if (input$select_metric_inf=="Earned Effective Reach"){
@@ -3105,7 +3251,9 @@ server=shinyServer(function(input, output, session){
   
   output$title_sk2_post <- renderText({
     
-    if (tolower(input$select_metric_inf)=="m-score"){
+    if(is.null(input$select_metric_inf)){ return()}
+    
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -3130,10 +3278,9 @@ server=shinyServer(function(input, output, session){
   })
   
   output$title_top_comments <- renderText({
-    print ("in output$title_top_comments")
-    #if(is.null(input$select_metric_inf)){ return() }
-    print(reactive_get_metric_inf())
-    if (tolower(input$select_metric_inf)=="m-score"){
+    print ("in title_top_comments")
+    if(is.null(input$select_metric_inf)){ return() }
+    if (tolower(input$select_metric_inf)=="mscore"){
       top10 <- reactive_return_getTop10Infleuncer()
       
     }
@@ -3149,7 +3296,7 @@ server=shinyServer(function(input, output, session){
         title <- v$title_top_comments
       }
     }else{
-      title = NULL
+      title = ""
     }
     title
   })
@@ -3184,7 +3331,7 @@ server=shinyServer(function(input, output, session){
           IG_data=merge(subset_IG_Comment_Data,IG_Post_Data, by  = c("Media ID"))
           if (nrow(IG_data!=0)){
             IG_data = select(IG_data,Username.x,Date.x,Caption,Message,Type,Sentiment,`Media URL`,Media)
-            names(IG_data)=c("KOLNAME","DATE","POSTDESC","COMMENT","TYPE","Sentiment","POSTIMAGE","POSTURL")
+            names(IG_data)=c("KOLNAME","DATE","DESCRIPTION","COMMENT","TYPE","Sentiment","POSTIMAGE","POSTURL")
             IG_data=IG_data[ order(IG_data$DATE, decreasing = TRUE ),]
           }
         }
@@ -3213,7 +3360,7 @@ server=shinyServer(function(input, output, session){
           data=merge(subset_IG_Comment_Data,IG_Post_Data, by  = c("Media ID"))
           if (nrow(data!=0)){
             data = select(data,Username.x,Date.x,Caption,Message,Type,Sentiment,`Media URL`,Media)
-            names(data)=c("KOLNAME","DATE","POSTDESC","COMMENT","TYPE","Sentiment","POSTIMAGE","POSTURL")
+            names(data)=c("KOLNAME","DATE","DESCRIPTION","COMMENT","TYPE","Sentiment","POSTIMAGE","POSTURL")
             data=data[ order(data$DATE, decreasing = TRUE ),]
           }
         }
@@ -3222,28 +3369,38 @@ server=shinyServer(function(input, output, session){
     }
     
     if (nrow(data)!=0){
-      height = " width=\"52\" height=\"52\"></img>"
+      height = " width=\"42\" height=\"42\"></img>"
       data$picture_str = paste0("\"",data$POSTIMAGE,"\"")
       data$IMAGE = paste("<a href=",data$POSTURL ,"target=_blank","><img src=",data$picture_str,height)
       data$POSTIMAGE = NULL
       data$picture_str=NULL
       data$POSTURL=NULL
-      names(data)=c("KOL NAME","DATE","POST DESC","COMMENT","TYPE","SENTIMENT","POST")
-      data$SENTIMENT[data$SENTIMENT <=39] = "NEGATIVE"
-      data$SENTIMENT[data$SENTIMENT >= 40 & data$SENTIMENT <=49 ] = "NEUTRAL"
-      data$SENTIMENT[data$SENTIMENT >=49] = "POSITIVE"
+      names(data)=c("KOL NAME","DATE","DESCRIPTION","COMMENT","TYPE","SENTIMENT","POST")
+      # data$SENTIMENT[data$SENTIMENT <=39] = "NEGATIVE"
+      # data$SENTIMENT[data$SENTIMENT >= 40 & data$SENTIMENT <=49 ] = "NEUTRAL"
+      # data$SENTIMENT[data$SENTIMENT >=49] = "POSITIVE"
+      
+      
+      data[data$SENTIMENT <=39,"SENTIMENT"] = "NEGATIVE"
+      data[data$SENTIMENT >= 40 & data$SENTIMENT <=49,"SENTIMENT" ] = "NEUTRAL"
+      data[data$SENTIMENT >=49,"SENTIMENT"] = "POSITIVE"
+      
+      # data$DATE=gsub("/", "-", data$DATE)
+      # data$DATE=dmy(data$DATE)
+       data$DATE=gsub("-", "/", data$DATE)
       
       
       
     }
-    names(data)=c("KOL NAME","DATE","POST DESC","COMMENT","TYPE","SENTIMENT","POST")  
-    data <- data[c("DATE","KOL NAME","POST","POST DESC","SENTIMENT","TYPE","COMMENT")]
-    #View(data)
+    names(data)=c("KOL","DATE","DESCRIPTION","COMMENT","TYPE","SENTIMENT","POST")  
+    data <- data[c("DATE","KOL","POST","DESCRIPTION","SENTIMENT","TYPE","COMMENT")]
+
+    colnames(data)[c(1,2,3,4,5,6,7)] <- paste0('<span style="color:',c("#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d"),'">',colnames(data)[c(1,2,3,4,5,6,7)],'</span>')
     
     response_comments_data <<- data
-    DT::datatable(data,escape=F, options = list(scrollX = TRUE,language = list(
+    DT::datatable(data,escape=F,selection = 'none',rownames= FALSE, options = list(scrollX = TRUE,language = list(
       zeroRecords = "No records to display for the selected filter! Please change the filter options and try again.")  ,pageLength = 10,searching = FALSE,columnDefs = list(list(
-        targets = 4,
+        targets = 3,
         
         render = JS(
           "function(data, type, row, meta) {",
@@ -3260,7 +3417,7 @@ server=shinyServer(function(input, output, session){
   
   output$summary_daterange_selector <- renderUI({
     dateRangeInput("summary_daterange", label = ""
-                   , start=Sys.Date(), end = Sys.Date() + 6, weekstart=1)
+                   , start=Sys.Date()-150, end = Sys.Date()-150 + 6, weekstart=1)
   })
   
   output$market_daterange_selector <- renderUI({
@@ -3271,11 +3428,11 @@ server=shinyServer(function(input, output, session){
   
   output$select_daterange_inf <- renderUI({
     dateRangeInput("select_daterange_inf", label = ""
-                   , start=Sys.Date(), end = Sys.Date() + 6, weekstart=1)
+                   , start=Sys.Date()-200, end = Sys.Date()-100 + 6, weekstart=1)
   })
   
   output$select_metric_inf = renderUI({
-    selectInput('select_metric_inf', '', choices = c("M-Score","Earned Effective Reach"),width="200px")
+    selectInput('select_metric_inf', '', choices = c("MScore","Earned Effective Reach"),width="200px")
   })
   
   
@@ -3316,7 +3473,7 @@ server=shinyServer(function(input, output, session){
   
   output$period_mostrecentposts = renderUI({
     dateRangeInput("period_mostrecentposts", label = ""
-                   , start=Sys.Date(), end = Sys.Date() + 6, weekstart=1)
+                   , start=Sys.Date()-150, end = Sys.Date()-150 + 6, weekstart=1)
   })
   
   output$market_mostrecentposts = renderUI({
@@ -3324,7 +3481,11 @@ server=shinyServer(function(input, output, session){
   })
   
   output$type_mostrecentposts = renderUI({
-    selectInput('type_mostrecentposts', '', choices = c("Video","Image","Carousel","All"),width="400px" )
+    selectInput('type_mostrecentposts', '', choices = c("All","Video","Image","Carousel"),width="400px" )
+  })
+  
+  output$select_market_inf = renderUI({
+    selectInput('select_market_inf', '', choices = c("Japan","All"),width="400px" )
   })
   
   
@@ -3336,14 +3497,14 @@ server=shinyServer(function(input, output, session){
     TW = data.frame()
     #year = reactive_return_year_ps()
     #month = reactive_return_month_ps()
-    market = reactive_return_market_ps()
-    
+    #market = reactive_return_market_ps()
+    market = input$market_wt
     if(is.null(market)){  return() }
     
     start_date =  unlist(strsplit(reactive_summary_daterange(),split='|',fixed=TRUE))[1]
     end_date =  unlist(strsplit(reactive_summary_daterange(),split='|',fixed=TRUE))[2]
     
-    
+    if(is.null(start_date) | is.null(end_date) | is.na(end_date) |is.na(start_date)) { return()}
     
     # FB_Post_Data = reactive_FB_Post_Data
     # FB_Post_Data = FB_Post_Data[grepl("sk2", FB_Post_Data$Label1)==TRUE,]
@@ -3352,24 +3513,20 @@ server=shinyServer(function(input, output, session){
     TW_Post_Data = reactive_TW_Post_Data
     TW_Post_Data = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==TRUE,]
     if(nrow(TW_Post_Data)!=0){
-      print("1")
       if(market !="All"){
-        print("2")
         TW_Post_Data = subset(TW_Post_Data,as.character(lapply(strsplit(as.character(TW_Post_Data$Label1), split="_"),tail, n=1))==market)
+      }
+      if(nrow(TW_Post_Data)!=0){
+        TW_Post_Data$Date=gsub("/", "-", TW_Post_Data$Date)
+        TW_Post_Data$Date = dmy(TW_Post_Data$Date)
+        TW_Post_Data = subset(TW_Post_Data, TW_Post_Data$Date>=start_date & TW_Post_Data$Date <=end_date)
         if(nrow(TW_Post_Data)!=0){
-          print("3")
-          TW_Post_Data$Date=gsub("/", "-", TW_Post_Data$Date)
-          TW_Post_Data$Date = dmy(TW_Post_Data$Date)
-          TW_Post_Data = subset(TW_Post_Data, TW_Post_Data$Date>=start_date & TW_Post_Data$Date <=end_date)
-          if(nrow(TW_Post_Data)!=0){
-            print("4")
-            TW_Post_Data$Date=gsub("-", "/", TW_Post_Data$Date)
-            TW_Post_Data$Date=format(as.Date(TW_Post_Data$Date), "%d/%m/%Y")
-            TW_Post_Data = add_mscore(TW_Post_Data,"TW")
-            TW_Page_Data = reactive_TW_Page_Data
-            TW_EER = add_EER(TW_Page_Data,TW_Post_Data,"TW")
-            TW_Post_Data = merge(TW_Post_Data,TW_EER)
-          }
+          TW_Post_Data$Date=gsub("-", "/", TW_Post_Data$Date)
+          TW_Post_Data$Date=format(as.Date(TW_Post_Data$Date), "%d/%m/%Y")
+          TW_Post_Data = add_mscore(TW_Post_Data,"TW")
+          TW_Page_Data = reactive_TW_Page_Data
+          TW_EER = add_EER(TW_Page_Data,TW_Post_Data,"TW")
+          TW_Post_Data = merge(TW_Post_Data,TW_EER)
         }
       }
     }
@@ -3380,24 +3537,20 @@ server=shinyServer(function(input, output, session){
     IG_Post_Data = reactive_IG_Post_Data
     IG_Post_Data = IG_Post_Data[grepl("sk2", IG_Post_Data$Label1)==TRUE,]
     if(nrow(IG_Post_Data)!=0){
-      print("5")
       if(market !="All"){
-        print("6")
         IG_Post_Data=subset(IG_Post_Data,as.character(lapply(strsplit(as.character(IG_Post_Data$Label1), split="_"),tail, n=1))==market)
+      }
+      if(nrow(IG_Post_Data)!=0){
+        IG_Post_Data$Date=gsub("/", "-", IG_Post_Data$Date)
+        IG_Post_Data$Date = dmy(IG_Post_Data$Date)
+        IG_Post_Data = subset(IG_Post_Data, IG_Post_Data$Date>=start_date & IG_Post_Data$Date <=end_date)
         if(nrow(IG_Post_Data)!=0){
-          print("7")
-          IG_Post_Data$Date=gsub("/", "-", IG_Post_Data$Date)
-          IG_Post_Data$Date = dmy(IG_Post_Data$Date)
-          IG_Post_Data = subset(IG_Post_Data, IG_Post_Data$Date>=start_date & IG_Post_Data$Date <=end_date)
-          if(nrow(IG_Post_Data)!=0){
-            print("8")
-            IG_Post_Data$Date=gsub("-", "/", IG_Post_Data$Date)
-            IG_Post_Data$Date=format(as.Date(IG_Post_Data$Date), "%d/%m/%Y")
-            IG_Post_Data = add_mscore(IG_Post_Data,"IG")
-            IG_Page_Data = reactive_IG_Page_Data
-            IG_EER = add_EER(IG_Page_Data,IG_Post_Data,"IG")
-            IG_Post_Data = merge(IG_Post_Data,IG_EER)
-          }
+          IG_Post_Data$Date=gsub("-", "/", IG_Post_Data$Date)
+          IG_Post_Data$Date=format(as.Date(IG_Post_Data$Date), "%d/%m/%Y")
+          IG_Post_Data = add_mscore(IG_Post_Data,"IG")
+          IG_Page_Data = reactive_IG_Page_Data
+          IG_EER = add_EER(IG_Page_Data,IG_Post_Data,"IG")
+          IG_Post_Data = merge(IG_Post_Data,IG_EER)
         }
       }
     }
@@ -3450,20 +3603,18 @@ server=shinyServer(function(input, output, session){
       consolidated_data = rbind(TW,IG)
     }else if(nrow(TW)==0 && nrow(IG)==0){
       consolidated_data=data.frame()
-      print("inside nrow(TW)==0 & nrow(IG)==0")
     }else if(nrow(TW)==0){
       consolidated_data=IG
     }else if(nrow(IG)==0){
       consolidated_data=TW
     }
     
-    print(nrow(consolidated_data))
     if(nrow(consolidated_data)!=0){
       consolidated_data$`EARNED EFFECTIVE REACH`[(consolidated_data$`EARNED EFFECTIVE REACH` - floor(consolidated_data$`EARNED EFFECTIVE REACH`)) <.5]  = floor(consolidated_data$`EARNED EFFECTIVE REACH`[(consolidated_data$`EARNED EFFECTIVE REACH` - floor(consolidated_data$`EARNED EFFECTIVE REACH`)) < .5])
       consolidated_data$`EARNED EFFECTIVE REACH`[(consolidated_data$`EARNED EFFECTIVE REACH` - floor(consolidated_data$`EARNED EFFECTIVE REACH`)) >= .5]= ceiling(consolidated_data$`EARNED EFFECTIVE REACH`[(consolidated_data$`EARNED EFFECTIVE REACH` - floor(consolidated_data$`EARNED EFFECTIVE REACH`)) >= .5])
       consolidated_data=dplyr::arrange(consolidated_data, desc(DATE))
       
-      height = " width=\"50\" height=\"52\"></img>"
+      height = " width=\"42\" height=\"42\"></img>"
       consolidated_data$picture_str = paste0("\"",consolidated_data$URL,"\"")
       test_url=consolidated_data$TEST #"https://www.w3schools.com"
       #consolidated_data$POST = paste("<a href=",test_url,"><img class='img-circle' src=",consolidated_data$picture_str,height)
@@ -3472,45 +3623,61 @@ server=shinyServer(function(input, output, session){
       consolidated_data$URL = NULL
       consolidated_data$picture_str=NULL
       consolidated_data$TEST=NULL
-      names(consolidated_data)= c('DATE','DESCRIPTION','KOL','EARNED EFFECTIVE REACH','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','M-SCORE','POST')
+      names(consolidated_data)= c('DATE','DESCRIPTION','KOL','EARNED EFFECTIVE REACH','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','MSCORE','POST')
       
-      consolidated_data <- consolidated_data[,c('DATE','POST','DESCRIPTION','KOL','EARNED EFFECTIVE REACH','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','M-SCORE')]
+      consolidated_data <- consolidated_data[,c('DATE','POST','DESCRIPTION','KOL','EARNED EFFECTIVE REACH','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','MSCORE')]
       consolidated_data=consolidated_data[complete.cases(consolidated_data), ]
       
-      consolidated_data$`EARNED EFFECTIVE REACH` = format(consolidated_data$`EARNED EFFECTIVE REACH`,big.mark=",",scientific=FALSE)
-      consolidated_data$ENGAGEMENT = format(consolidated_data$ENGAGEMENT,big.mark=",",scientific=FALSE)
-      consolidated_data$`ENGAGEMENT RATE` = format(consolidated_data$`ENGAGEMENT RATE`,big.mark=",",scientific=FALSE)
-      consolidated_data$`M-SCORE` = format(consolidated_data$`M-SCORE`,big.mark=",",scientific=FALSE)
+      consolidated_data$DATE=gsub("/", "-", consolidated_data$DATE)
+      consolidated_data$DATE=dmy(consolidated_data$DATE)
+      consolidated_data$DATE=gsub("-", "/", consolidated_data$DATE)
       
-      # colnames(consolidated_data)[c(1,2,3,4,5,6,7)] <- paste0('<span style="color:',c("#E1005D","#E1005D","#E1005D","#E1005D","#E1005D","#E1005D","#E1005D"),'">',colnames(consolidated_data)[c(1,2,3,4,5,6,7)],'</span>')
+      # consolidated_data$`EARNED EFFECTIVE REACH` = format(consolidated_data$`EARNED EFFECTIVE REACH`,big.mark=",",scientific=FALSE)
+      # consolidated_data$ENGAGEMENT = format(consolidated_data$ENGAGEMENT,big.mark=",",scientific=FALSE)
+      # consolidated_data$`ENGAGEMENT RATE` = format(consolidated_data$`ENGAGEMENT RATE`,big.mark=",",scientific=FALSE)
+      # consolidated_data$`M-SCORE` = format(consolidated_data$`M-SCORE`,big.mark=",",scientific=FALSE)
+      # colnames(consolidated_data)[c(1,2,3,4,5,6,7)] <- paste0('<span style="color:',c("#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d"),'">',colnames(consolidated_data)[c(1,2,3,4,5,6,7)],'</span>')
       # DT::datatable(consolidated_data,escape=F)
       
-      # consolidated_data$IMAGE <- sprintf('![](beats.png)')
-      
-      # View(consolidated_data)
-      
-      # consolidated_data    
+      # consolidated_data$`M-SCORE` = prettyNum(consolidated_data$`M-SCORE`, big.mark = ",")
+      # consolidated_data$`EARNED EFFECTIVE REACH` = prettyNum(consolidated_data$`EARNED EFFECTIVE REACH`, big.mark = ",")
+      # 
+      # consolidated_data$ENGAGEMENT = prettyNum(consolidated_data$ENGAGEMENT, big.mark = ",")
+      # consolidated_data$`ENGAGEMENT RATE` = prettyNum(consolidated_data$`ENGAGEMENT RATE`, big.mark = ",")
+      # 
       
     }else{
-      print("in else")
       consolidated_data <- data.frame(matrix(ncol = 9, nrow = 0))
-      x <- c('DATE','POST','DESCRIPTION','KOL','EARNED EFFECTIVE REACH','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','M-SCORE')
+      x <- c('DATE','POST','DESCRIPTION','KOL','EARNED EFFECTIVE REACH','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','MSCORE')
       colnames(consolidated_data) <- x
       
     }
     
+    
+    
     post_summary_export_data <<- consolidated_data
+    #do not delete
     # library(googleLanguageR)
     # path = "/Users/suteja.kanuri/Documents/MC/video_intel_api/youtube_API/donotdelete/servicekey.json"
     # 
     # consolidated_data$RAW = gl_translate(as.character(consolidated_data$DESCRIPTION), target = "en")$translatedText
     # View(consolidated_data)
-    #li=c('DATE','POST','DESCRIPTION','KOL','ENGAGEMENT','ENGAGEMENT RATE','SENTIMENT','M-SCORE')
-    # colnames(iris_coloured)[c(1,3)] <- paste0('<span style="color:',c("red","blue"),'">',colnames(iris)[c(1,3)],'</span>')
+   # consolidated_data$DATE = paste0('<span style="font-family:Roboto, sans-serif">',consolidated_data$DATE,'</span>')
+   # consolidated_data$DESCRIPTION = paste0('<span style="font-family:Roboto, sans-serif">',consolidated_data$DESCRIPTION,'</span>')
+   # consolidated_data$KOL = paste0('<span style="font-family:Roboto, sans-serif">',consolidated_data$KOL,'</span>')
+   # consolidated_data$`EARNED EFFECTIVE REACH` = paste0('<span style="font-family:Roboto, sans-serif">',consolidated_data$`EARNED EFFECTIVE REACH`,'</span>')
+   # consolidated_data$ENGAGEMENT = paste0('<span style="font-family:Roboto, sans-serif">',consolidated_data$ENGAGEMENT,'</span>')
+   # consolidated_data$`ENGAGEMENT RATE` = paste0('<span style="font-family:Roboto, sans-serif">',consolidated_data$`ENGAGEMENT RATE`,'</span>')
+   # consolidated_data$SENTIMENT = paste0('<span style="font-family:Roboto, sans-serif">',consolidated_data$SENTIMENT,'</span>')
+   # consolidated_data$`M-SCORE` = paste0('<span style="font-family:Roboto, sans-serif">',consolidated_data$`M-SCORE`,'</span>')
+   
+   colnames(consolidated_data)[c(1,2,3,4,5,6,7,8,9)] <- paste0('<span style="color:',c("#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d","#E0005d"),'">',colnames(consolidated_data)[c(1,2,3,4,5,6,7,8,9)],'</span>')
     
-    DT::datatable(consolidated_data,escape=F, options = list(scrollX = TRUE,language = list(
+    DT::datatable(consolidated_data,escape=F,rownames= FALSE, selection = 'none',
+                  
+                  options = list(language.thousands = ",",scrollX = TRUE,language = list(
       zeroRecords = "No records to display for the selected filter! Please change the filter options and try again.")  ,pageLength = 10,searching = FALSE,columnDefs = list(list(
-        targets = 3,
+        targets = 2,
         
         render = JS(
           "function(data, type, row, meta) {",
@@ -3518,22 +3685,30 @@ server=shinyServer(function(input, output, session){
           "'<span title=\"' + data + '\">' + data.substr(0, 30) + '...</span>' : data;",
           "}")
         
+        
       ))))%>% formatStyle(
-        'M-SCORE',
+        '<span style="color:#E0005d">MSCORE</span>',
         backgroundColor = "#FFC6DE"
       )%>% formatStyle(
-        'SENTIMENT',
+        '<span style="color:#E0005d">SENTIMENT</span>',
         color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
       )%>% formatStyle(
-        'ENGAGEMENT', 'SENTIMENT',
+        '<span style="color:#E0005d">ENGAGEMENT</span>', '<span style="color:#E0005d">SENTIMENT</span>',
         color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
       )%>% formatStyle(
-        'ENGAGEMENT RATE', 'SENTIMENT',
+        '<span style="color:#E0005d">ENGAGEMENT RATE</span>', '<span style="color:#E0005d">SENTIMENT</span>',
         color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
       )%>% formatStyle(
-        'M-SCORE', 'SENTIMENT',
+        '<span style="color:#E0005d">MSCORE</span>', '<span style="color:#E0005d">SENTIMENT</span>',
         color = styleEqual(c("POSITIVE", "NEGATIVE", "NEUTRAL"), c('#2a9a2a', '#f40939','#FFC200'))
-      )
+      )%>%formatCurrency('<span style="color:#E0005d">ENGAGEMENT</span>',currency = "", interval = 3, mark = ","
+      )%>%formatCurrency('<span style="color:#E0005d">EARNED EFFECTIVE REACH</span>',currency = "", interval = 3, mark = ","
+      )%>%formatCurrency('<span style="color:#E0005d">ENGAGEMENT RATE</span>',currency = "", interval = 3, mark = ","
+      )%>%formatCurrency('<span style="color:#E0005d">MSCORE</span>',currency = "", interval = 3, mark = ",")
+      
+
+    
+  
     #, callback = JS('table.page(3).draw(false);')) 
     
     
@@ -3548,7 +3723,7 @@ server=shinyServer(function(input, output, session){
       # )
       
       if(nrow(post_summary_export_data)!=0){
-        write.xlsx(post_summary_export_data, q, row.names = FALSE,Encoding = "UTF-8")
+        write.xlsx(post_summary_export_data, file, row.names = FALSE,Encoding = "UTF-8")
       }
     }
   )
@@ -3821,12 +3996,10 @@ server=shinyServer(function(input, output, session){
     TW_Post_Data = reactive_TW_Post_Data
     TW_Post_Data = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==TRUE,]
     if(nrow(TW_Post_Data)!=0){
-      print("1")
       TW_Post_Data$Date=gsub("/", "-", TW_Post_Data$Date)
       TW_Post_Data$Date = dmy(TW_Post_Data$Date)
       TW_Post_Data = subset(TW_Post_Data, TW_Post_Data$Date>=start_date & TW_Post_Data$Date <=end_date)
       if(nrow(TW_Post_Data)!=0){
-        print("2")
         TW_Post_Data$Date=gsub("-", "/", TW_Post_Data$Date)
         TW_Post_Data$Date=format(as.Date(TW_Post_Data$Date), "%d/%m/%Y")
         TW_Post_Data = add_mscore(TW_Post_Data,"TW")
@@ -3838,14 +4011,11 @@ server=shinyServer(function(input, output, session){
     
     IG_Post_Data = reactive_IG_Post_Data
     IG_Post_Data = IG_Post_Data[grepl("sk2", IG_Post_Data$Label1)==TRUE,]
-    print(paste("nrow(IG_Post_Data===",nrow(IG_Post_Data)))
     if(nrow(IG_Post_Data)!=0){
-      print("3")
       IG_Post_Data$Date=gsub("/", "-", IG_Post_Data$Date)
       IG_Post_Data$Date = dmy(IG_Post_Data$Date)
       IG_Post_Data = subset(IG_Post_Data, IG_Post_Data$Date>=start_date & IG_Post_Data$Date <=end_date)
       if(nrow(IG_Post_Data)!=0){
-        print("4")
         IG_Post_Data$Date=gsub("-", "/", IG_Post_Data$Date)
         IG_Post_Data$Date=format(as.Date(IG_Post_Data$Date), "%d/%m/%Y")
         IG_Post_Data = add_mscore(IG_Post_Data,"IG")
@@ -3861,7 +4031,6 @@ server=shinyServer(function(input, output, session){
     if(nrow(IG)!=0 & nrow(TW)!=0){
       df_consolidated <- rbind(IG,TW)
       df_consolidated=df_consolidated[rev(order(df_consolidated$MSCORE)),c('Infleuncer','MSCORE','POST_URL','PROFILE_URL')]
-      print("5")
     }else if(nrow(IG)==0 & nrow(TW)==0){
       df_consolidated = data.frame()
     }else if(nrow(IG)==0){
@@ -3872,21 +4041,18 @@ server=shinyServer(function(input, output, session){
     
     top_influencers=data.frame()
     if(nrow(df_consolidated)!=0){
-      print("6")
       df=aggregate(MSCORE ~ Infleuncer, data=df_consolidated, FUN=mean)
       data=df_consolidated[!duplicated(df_consolidated$Infleuncer), ]
       top_influencers =merge(data, df, by = 'Infleuncer',sort=F)
       if(nrow(top_influencers)!=0){
-        print("7")
         names(top_influencers) = c("Infleuncer","Total_mscore","POST_URL","PROFILE_URL","MSCORE")
         top_influencers$MSCORE =
-          format(round(top_influencers$MSCORE, 2))
+        format(round(top_influencers$MSCORE, 2))
         top_influencers$Total_mscore=NULL
       }
     }
     
     if(nrow(top_influencers)!=0){
-      print("8")
       return (as.character(unique(top_influencers$Infleuncer)))
     }else{
       return(list("No influencers present for the selected data range! Please change the date range and try again"))
@@ -4132,9 +4298,6 @@ server=shinyServer(function(input, output, session){
   reactive_top_influencer_image_url<<-reactive({
     
     print("in the method reactive_top_influencer_image_url()")
-    if(is.null(value) || is.na(value)) {  return()  }
-    print (value)
-    
 
     require (input$summary_daterange )
     if (length(input$summary_daterange)<2) return()
@@ -4172,7 +4335,6 @@ server=shinyServer(function(input, output, session){
     ####
 
     if (nrow(IG_Post_Data)!=0){
-
       IG_Post_Data$Date=gsub("/", "-", IG_Post_Data$Date)
       IG_Post_Data$Date = dmy(IG_Post_Data$Date)
       IG_Post_Data = subset(IG_Post_Data, IG_Post_Data$Date>=start_date & IG_Post_Data$Date <=end_date)
@@ -4191,18 +4353,13 @@ server=shinyServer(function(input, output, session){
             colnames(IG_Post_Data_image_df)[6] <- "Post URL"
           }
         }
-
-
         IG_Post_Data_video_df = IG_Post_Data[(grepl(paste(c("video"), collapse = "|"), IG_Post_Data$Type)==TRUE),]
         if (nrow(IG_Post_Data_video_df)!=0){
           IG_Post_Data_video_df["Earned_Effective_Reach"] = 0.25 * IG_Post_Data_video_df["Views"]
           IG_Post_Data_video_df = IG_Post_Data_video_df[,c("Username","Date","Profile Image","Media URL","Earned_Effective_Reach","Media" )]
-
           colnames(IG_Post_Data_video_df)[4] <- "Post Image"
           colnames(IG_Post_Data_video_df)[6] <- "Post URL"
         }
-
-
       }
     }
 
@@ -4233,41 +4390,68 @@ server=shinyServer(function(input, output, session){
       if (nrow(TW_Post_Data)!=0){
         TW_Post_Data$Date=gsub("-", "/", TW_Post_Data$Date)
         TW_Post_Data$Date=format(as.Date(TW_Post_Data$Date), "%d/%m/%Y")
-        TW_Page_Data["Earned_Effective_Reach"] = 0.054 * TW_Page_Data["Followers"]
+        #TW_Page_Data["Earned_Effective_Reach"] = 0.054 * TW_Page_Data["Followers"]
         TW_Post_Data_image_df = TW_Post_Data[grepl(paste(c("Link","Photo","Text"), collapse = "|"), TW_Post_Data$Type)==TRUE,]
-        TW_Post_Data_image_df=merge(TW_Post_Data_image_df,TW_Page_Data, by  = c("Username","Date"))
         if (nrow(TW_Post_Data_image_df)!=0){
-          TW_Post_Data_image_df=TW_Post_Data_image_df[, c("Username","Date","Profile Image","Post Image","Earned_Effective_Reach" ,"URL")]
-          colnames(TW_Post_Data_image_df)[6] <- "Post URL"
-          TW_Post_Data_image_df$Platform = "Twitter"
+          TW_Post_Data_image_df=merge(TW_Post_Data_image_df,TW_Page_Data, by  = c("Username","Date"))
+          if (nrow(TW_Post_Data_image_df)!=0){
+            names(TW_Post_Data_image_df)[17] = "Followers"
+            TW_Post_Data_image_df["Earned_Effective_Reach"] = 0.054 * TW_Post_Data_image_df["Followers"]
+            TW_Post_Data_image_df = TW_Post_Data_image_df[,c("Username","Date","Profile Image","Post Image","Earned_Effective_Reach","URL" )]
+            colnames(TW_Post_Data_image_df)[6] <- "Post URL"
+            colnames(TW_Post_Data_image_df)[4] <- "Post Image"
+            
+          }
         }
+        TW_Post_Data_video_df = TW_Post_Data[grepl("Video", TW_Post_Data$Type)==TRUE,]
+        if (nrow(TW_Post_Data_video_df)!=0){
+          TW_Post_Data_video_df=merge(TW_Post_Data_video_df,TW_Page_Data, by  = c("Username","Date"))
+          if (nrow(TW_Post_Data_video_df)!=0){
+            TW_Post_Data_video_df$Earned_Effective_Reach=0.014 * TW_Post_Data_video_df$Views
+            TW_Post_Data_video_df=TW_Post_Data_video_df[,c("Username","Date","Profile Image","Post Image","Earned_Effective_Reach","URL" )]
+            colnames(TW_Post_Data_video_df)[6] <- "Post URL"
+            colnames(TW_Post_Data_video_df)[4] <- "Post Image"
+          }
+        }       
+      }
+      
+      if (nrow(TW_Post_Data_image_df)==0 & nrow(TW_Post_Data_video_df)==0){
+        TW_Post_Data_sk2 = data.frame(matrix(ncol = 5, nrow = 0))
+        TW_Post_Data_sk2$Platform ="Twitter"
+      }else if (nrow(TW_Post_Data_image_df)!=0 & nrow(TW_Post_Data_video_df)!=0){
+        TW_Post_Data_sk2 = rbind(TW_Post_Data_image_df,TW_Post_Data_video_df)
+        TW_Post_Data_sk2$Platform ="Twitter"
+      }else if(nrow(TW_Post_Data_image_df) == 0 & nrow(TW_Post_Data_video_df)!=0){
+        TW_Post_Data_sk2 = TW_Post_Data_video_df
+        TW_Post_Data_sk2$Platform ="Twitter"
+      }else if(nrow(TW_Post_Data_video_df) == 0 & nrow(TW_Post_Data_image_df)!=0){
+        TW_Post_Data_sk2 = TW_Post_Data_image_df
+        TW_Post_Data_sk2$Platform ="Twitter"
       }
     }
 
 
-    #df = rbind(TW_Post_Data_image_df,IG_Post_Data_sk2)
-    if(nrow(TW_Post_Data_image_df)==0 & nrow(IG_Post_Data_sk2)==0){
+    #df = rbind(TW_Post_Data_sk2,IG_Post_Data_sk2)
+    if(nrow(TW_Post_Data_sk2)==0 & nrow(IG_Post_Data_sk2)==0){
       df=data.frame(matrix(ncol = 7, nrow = 0))
     }
-    else if (nrow(TW_Post_Data_image_df)!=0 & nrow(IG_Post_Data_sk2)!=0){
-      df = rbind(TW_Post_Data_image_df,IG_Post_Data_sk2)
-      if(value == "top_influencer"){
+    else if (nrow(TW_Post_Data_sk2)!=0 & nrow(IG_Post_Data_sk2)!=0){
+      df = rbind(TW_Post_Data_sk2,IG_Post_Data_sk2)
+      if(value_type == "top_influencer"){
         #average the EER per influencer
         agg=aggregate(Earned_Effective_Reach ~ Username, data=df, FUN=mean)
         unique_data=df[!duplicated(df$Username), ]
         df = merge(agg, unique_data, by = 'Username',all.x=TRUE)
         df$Earned_Effective_Reach.x=NULL
         names(df)[5] =   "Earned_Effective_Reach"
-        
       }
-    }else if(nrow(TW_Post_Data_image_df) == 0 ){
+    }else if(nrow(TW_Post_Data_sk2) == 0 ){
       df = IG_Post_Data_sk2
     }else if(nrow(IG_Post_Data_sk2) == 0  ){
-      df = TW_Post_Data_image_df
+      df = TW_Post_Data_sk2
     }
     
     if (nrow(df)!=0){
-      
       df = as.data.frame(df)
       df=df[ order(df$Earned_Effective_Reach , decreasing = TRUE ),]
       return(list(df[1,"Profile Image"],df[1,"Post Image"],df[1,"Platform"],df[1,"Post URL"],df[1,"Username"]))
@@ -4309,10 +4493,9 @@ server=shinyServer(function(input, output, session){
     
     print("in the method reactive_return_getTop10Infleuncer_EER")
     
-    if (is.null(input$typeofpost_ht)) { 
-      return() }
+    # if (is.null(input$typeofpost_ht)) { 
+    #   return() }
     
-    print(input$typeofpost_ht)
     
     TW_Post_Data  = reactive_TW_Post_Data
     TW_Post_Data = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==TRUE,]
@@ -4411,8 +4594,8 @@ server=shinyServer(function(input, output, session){
       top_influencers$EER.y=NULL
       names(top_influencers) =c("Infleuncer"," DATE","DESCRIPTION", "PLATFORM","EER","PROFILE_URL")
       top_influencers$EER =
-        format(round(top_influencers$EER
-                     , 2))
+        round(as.numeric(top_influencers$EER)
+                     , 2)
       top_influencers=top_influencers[rev(order(top_influencers$EER)),c("Infleuncer"," DATE","DESCRIPTION", "PLATFORM","EER","PROFILE_URL")]
       top10 <-  top_influencers[1:10,] 
     }else {
@@ -4501,12 +4684,12 @@ server=shinyServer(function(input, output, session){
       top_influencers =(merge(data, df, by = 'Infleuncer',sort=F))
       names(top_influencers) = c("Infleuncer","Total_mscore","POST_URL","PROFILE_URL","MSCORE")
       top_influencers$MSCORE =
-        format(round(top_influencers$MSCORE, 2))
+        (round(as.numeric(top_influencers$MSCORE), 2))
       top_influencers$Total_mscore=NULL
       top_influencers=top_influencers[rev(order(top_influencers$MSCORE)),c("Infleuncer","POST_URL","PROFILE_URL","MSCORE")]
       
       #top_influencers=df_consolidated[!duplicated(df_consolidated$Infleuncer), ]
-      top10 <-  top_influencers[1:10,] 
+      top10 <<-  top_influencers[1:10,] 
     }
     return (top10)
   })
@@ -4924,7 +5107,7 @@ server=shinyServer(function(input, output, session){
    # })
   
   filter_posts<<-reactive ({
-
+    print("in the method filter_posts()")
     start_date =  unlist(strsplit(reactive_mostrecentposts_daterange(),split='|',fixed=TRUE))[1]
     end_date =  unlist(strsplit(reactive_mostrecentposts_daterange(),split='|',fixed=TRUE))[2]
     influencer_name    = reactive_return_Influencer_mrp()
@@ -4932,7 +5115,7 @@ server=shinyServer(function(input, output, session){
 
     if(is.null(start_date) | is.na(start_date)) { return() }
     if(is.null(end_date)   | is.na(end_date)) { return() }
-    if(is.null(influencer_name)) { return() }
+    if(is.null(influencer_name) || (grepl("Please", influencer_name)==TRUE) ) { return() }
     if(is.null(metric)) { return() }
 
     if (metric == "Earned Effective Reach"){
@@ -4941,23 +5124,17 @@ server=shinyServer(function(input, output, session){
       metric = 8
     }else if (metric == "Engagement"){
       metric = 5
-    }else if (metric == "M-Score"){
+    }else if (metric == "MScore"){
       metric = 9
     }
-    print(start_date)
-    print(end_date)
-    print(metric)
-    print(influencer_name)
 
     TW_Post_Data  = reactive_TW_Post_Data
     TW_Post_Data = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==TRUE,]
     if(nrow(TW_Post_Data)!=0){
-      print("1")
       TW_Post_Data$Date=gsub("/", "-", TW_Post_Data$Date)
       TW_Post_Data$Date = dmy(TW_Post_Data$Date)
       TW_Post_Data = subset(TW_Post_Data, TW_Post_Data$Date>=start_date & TW_Post_Data$Date <=end_date)
       if(nrow(TW_Post_Data)!=0){
-        print("2")
         TW_Post_Data$Date=gsub("-", "/", TW_Post_Data$Date)
         TW_Post_Data$Date=format(as.Date(TW_Post_Data$Date), "%d/%m/%Y")
         TW_Post_Data = add_mscore(TW_Post_Data,"TW")
@@ -4980,12 +5157,10 @@ server=shinyServer(function(input, output, session){
     IG_Post_Data  = reactive_IG_Post_Data
     IG_Post_Data = IG_Post_Data[grepl("sk2", IG_Post_Data$Label1)==TRUE,]
     if(nrow(IG_Post_Data)!=0){
-      print("3")
       IG_Post_Data$Date=gsub("/", "-", IG_Post_Data$Date)
       IG_Post_Data$Date = dmy(IG_Post_Data$Date)
       IG_Post_Data = subset(IG_Post_Data, IG_Post_Data$Date>=start_date & IG_Post_Data$Date <=end_date)
       if(nrow(IG_Post_Data)!=0){
-        print("4")
         IG_Post_Data$Date=gsub("-", "/", IG_Post_Data$Date)
         IG_Post_Data$Date=format(as.Date(IG_Post_Data$Date), "%d/%m/%Y")
         IG_Post_Data = add_mscore(IG_Post_Data,"IG")
@@ -4994,7 +5169,6 @@ server=shinyServer(function(input, output, session){
         IG_EER = add_EER(IG_Page_Data,IG_Post_Data,"IG")
         IG_Post_Data = merge(IG_Post_Data,IG_EER)
         if(nrow(IG_Post_Data)!=0){
-          print("5")
           IG_Post_Data = select(IG_Post_Data,Date,Caption,Username,PLATFORM,Earned_Effective_Reach,Engagement,`Engagement Rate`,Likes,sentiment_keyword,mscore,`Media URL`,Time,Type,Comments)
           names(IG_Post_Data) = c("DATE", "POST", "KOL", "PLATFORM","EARNED EFFECTIVE REACH","ENGAGEMENT","ENGAGEMENT RATE","REACTIONS","SENTIMENT","M-SCORE","URL","TIME","TYPE","COMMENTS")
         }
@@ -5002,10 +5176,8 @@ server=shinyServer(function(input, output, session){
     }
     most_recent_posts=data.frame()
     if(nrow(TW_Post_Data)!=0 & nrow(IG_Post_Data)!=0){
-      print("6")
       most_recent_posts = rbind(TW_Post_Data,IG_Post_Data)
     }else  if(nrow(TW_Post_Data)==0 & nrow(IG_Post_Data)==0){
-      print("7")
       most_recent_posts = data.frame()
     }else  if(nrow(TW_Post_Data)==0){
       most_recent_posts=IG_Post_Data
@@ -5015,7 +5187,6 @@ server=shinyServer(function(input, output, session){
 
     if(nrow(most_recent_posts)!=0){
       most_recent_posts = subset(most_recent_posts,most_recent_posts$KOL == influencer_name )
-      print(paste("most_recent_posts for infl",nrow(most_recent_posts),sep="-"))
       if(nrow(most_recent_posts)!=0){
         most_recent_posts=most_recent_posts[rev(order(most_recent_posts[metric])),]
         height = " width=\"200\", height=\"150\"></img>"
@@ -5028,7 +5199,6 @@ server=shinyServer(function(input, output, session){
         most_recent_posts=add_logo(most_recent_posts)
         most_recent_posts$PLATFORM = NULL
         names(most_recent_posts)[14] = "PLATFORM"
-        print(nrow(most_recent_posts))
         
       }
     }
@@ -5093,10 +5263,8 @@ server=shinyServer(function(input, output, session){
   
   get_historical_trend_data<<-reactive ({
     
-    
-    #print (v$button_clicked)
+    print("in the get_historical_trend_data() method")
     button_number=as.numeric(unlist(strsplit(v$button_clicked,"button"))[-1])
-    #print(button_number)
     
     FB_Post_Data = reactive_FB_Post_Data
     TW_Post_Data  = reactive_TW_Post_Data
@@ -5105,21 +5273,18 @@ server=shinyServer(function(input, output, session){
     platform_type = input$platform_ht
     metric = input$metric_ht
     post_type = input$typeofposts_ht
-    month = input$month_ht
-    year = input$year_ht
-    top10 = reactive_return_getTop10Infleuncer()
+    if(is.null(platform_type) | is.null(metric) | is.null(post_type)) { return()}
+    # month = input$month_ht
+    # year = input$year_ht
+    #top10 = reactive_return_getTop10Infleuncer()
     influencer_name = as.character(top10[button_number,1])
     flag=0
     data_IG = NULL
     data_TW = NULL
     
-    # print (platform_type)
-    # print(metric)
-    # print(post_type)
-    # print(month)
-    # print(year)
-    # print(influencer_name)
-    # 
+    start_date =  unlist(strsplit(reactive_inf_daterange(),split='|',fixed=TRUE))[1]
+    end_date =  unlist(strsplit(reactive_inf_daterange(),split='|',fixed=TRUE))[2]
+    if(is.na(start_date) || is.na(end_date)) { return()}
     
     #############################logic begins##################################
     # 
@@ -5237,40 +5402,35 @@ server=shinyServer(function(input, output, session){
       platform_type = 'Twitter'
       
     }
+    #        TW_Post_Data=subset(TW_Post_Data, as.numeric(sapply(strsplit(as.character(TW_Post_Data$Date), split="/"),tail, n=1)) == year )
+  #          TW_Post_Data = subset(TW_Post_Data,tolower(month.abb[as.numeric(sapply(strsplit(as.character(TW_Post_Data$Date), split="/"),'[',2))]) == tolower(month) )
+
     if(platform_type == 'Twitter'){
       data= NULL
       TW_Post_Data = subset(TW_Post_Data,TW_Post_Data$Username == influencer_name )
       if (nrow(TW_Post_Data) !=0){
-        TW_Post_Data=subset(TW_Post_Data, as.numeric(sapply(strsplit(as.character(TW_Post_Data$Date), split="/"),tail, n=1)) == year )
+        TW_Post_Data$Date=gsub("/", "-", TW_Post_Data$Date)
+        TW_Post_Data$Date = dmy(TW_Post_Data$Date)
+        TW_Post_Data = subset(TW_Post_Data, TW_Post_Data$Date>=start_date & TW_Post_Data$Date <=end_date)
         if (nrow(TW_Post_Data) !=0){
-          TW_Post_Data = subset(TW_Post_Data,tolower(month.abb[as.numeric(sapply(strsplit(as.character(TW_Post_Data$Date), split="/"),'[',2))]) == tolower(month) )
-          #print("Twitter")
-          # print (nrow(TW_Post_Data))
-          if (nrow(TW_Post_Data) !=0){
-            
+            TW_Post_Data$Date=gsub("-", "/", TW_Post_Data$Date)
+            TW_Post_Data$Date=format(as.Date(TW_Post_Data$Date), "%d/%m/%Y")
             if (metric == 'Earned Effective Reach'){
               if (post_type == 'All'){
-                
-                
-                
               }else if (post_type == 'SK-II Posts'){
-                
                 TW_Page_Data = reactive_TW_Page_Data
                 #TW_Post_Data = reactive_TW_Post_Data
                 TW_Post_Data = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==TRUE,]
                 data= get_EER_twitter(TW_Page_Data ,TW_Post_Data)
-                
               }else if(post_type == 'Non SK-II Posts'){
                 TW_Page_Data = reactive_TW_Page_Data
                 #TW_Post_Data = reactive_TW_Post_Data
                 TW_Post_Data = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==FALSE,]
                 data= get_EER_twitter(TW_Page_Data ,TW_Post_Data)
               }
-              
             }
             else if (metric == 'Engagement'){
               TW_Post_Data$Engagement =sum(TW_Post_Data$`Reply Count`,TW_Post_Data$`Favorite Count`,TW_Post_Data$`Retweet Count`)
-              
               if (post_type == 'All'){
                 data = TW_Post_Data[,c("Date","Engagement")]
               }else if (post_type == 'SK-II Posts'){
@@ -5299,11 +5459,12 @@ server=shinyServer(function(input, output, session){
                   data=as.data.frame(data)
                 }
               }else if(post_type  == 'Non SK-II Posts'){
+                subset = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==FALSE,]
                 if (nrow(subset)!=0){
-                  subset = TW_Post_Data[grepl("sk2", TW_Post_Data$Label1)==FALSE,]
+                  data = select(subset,Date,`Engagement Rate`)
+                  data=as.data.frame(data)
                 }
-                data = select(subset,Date,`Engagement Rate`)
-                data=as.data.frame(data)
+                
               }}
             
             
@@ -5328,7 +5489,7 @@ server=shinyServer(function(input, output, session){
               }
               
             }
-            else if (metric == 'M-Score'){
+            else if (metric == 'MScore'){
               TW_Post_Data = add_mscore(TW_Post_Data,"TW")
               if (post_type == 'All'){
                 data = TW_Post_Data[,c("Date","mscore")]
@@ -5352,20 +5513,24 @@ server=shinyServer(function(input, output, session){
         platform_type = 'Instagram'
       }
       
-    }
+    
     # print ("TWITTER")
     # print(nrow(data))
     
+  #        IG_Post_Data=subset(IG_Post_Data, as.numeric(sapply(strsplit(as.character(IG_Post_Data$Date), split="/"),tail, n=1)) == year )
+
+  #          IG_Post_Data = subset(IG_Post_Data,tolower(month.abb[as.numeric(sapply(strsplit(as.character(IG_Post_Data$Date), split="/"),'[',2))]) == tolower(month) )
+
     if(platform_type == 'Instagram'){
       data=NULL
       IG_Post_Data = subset(IG_Post_Data,IG_Post_Data$Username == influencer_name )
       if (nrow(IG_Post_Data) !=0){
-        IG_Post_Data=subset(IG_Post_Data, as.numeric(sapply(strsplit(as.character(IG_Post_Data$Date), split="/"),tail, n=1)) == year )
+        IG_Post_Data$Date=gsub("/", "-", IG_Post_Data$Date)
+        IG_Post_Data$Date = dmy(IG_Post_Data$Date)
+        IG_Post_Data = subset(IG_Post_Data, IG_Post_Data$Date>=start_date & IG_Post_Data$Date <=end_date)
         if (nrow(IG_Post_Data) !=0){
-          IG_Post_Data = subset(IG_Post_Data,tolower(month.abb[as.numeric(sapply(strsplit(as.character(IG_Post_Data$Date), split="/"),'[',2))]) == tolower(month) )
-          
-          if (nrow(IG_Post_Data) !=0){
-            
+            IG_Post_Data$Date=gsub("-", "/", IG_Post_Data$Date)
+            IG_Post_Data$Date=format(as.Date(IG_Post_Data$Date), "%d/%m/%Y")
             if (metric == 'Earned Effective Reach'){
               IG_Page_Data = reactive_IG_Page_Data
               #IG_Post_Data = reactive_TW_Post_Data 
@@ -5408,10 +5573,11 @@ server=shinyServer(function(input, output, session){
                   data = select(subset,Date,`Engagement Rate`)
                 }
               }else if(post_type  == 'Non SK-II Posts'){
+                subset = IG_Post_Data[grepl("sk2", IG_Post_Data$Label1)==FALSE,]
                 if (nrow(subset)!=0){
-                  subset = IG_Post_Data[grepl("sk2", IG_Post_Data$Label1)==FALSE,]
+                  data = select(subset,Date,`Engagement Rate`)
                 }
-                data = select(subset,Date,`Engagement Rate`)
+                
               }
               
             }
@@ -5436,7 +5602,7 @@ server=shinyServer(function(input, output, session){
               }
               
             }
-            else if (metric == 'M-Score'){
+            else if (metric == 'MScore'){
               IG_Post_Data = add_mscore(IG_Post_Data,"IG")
               if (post_type == 'All'){
                 data = IG_Post_Data[,c("Date","mscore")]
@@ -5456,13 +5622,11 @@ server=shinyServer(function(input, output, session){
               }
               
             }
-          }}
-      }
+          }
+      }}
       if (flag ==1){
         data_IG = data
       }
-      
-    }
     
     if (flag==1){
       if (!is.null(data_IG) & !is.null(data_TW)){
@@ -5475,23 +5639,15 @@ server=shinyServer(function(input, output, session){
         data = data_IG
       }
     }
-    
     if(is.null(data)) { return() }
-    
-    
     data$Date=gsub("/", "-", data$Date)
     data$Date=dmy(data$Date)
     data=data[ order(data$Date , decreasing = TRUE ),]
     data$Date=gsub("-", "/", data$Date)
     return (data)
     
-    
-    
   })
   
-  
-  
-  ###### reactive data #####
   
 })
 
