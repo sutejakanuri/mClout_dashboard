@@ -135,6 +135,15 @@ dashboardPage(
                                 padding-left: 40px;
                               }
 
+                              hr {
+                                  display: block;
+                                  height: 0px;
+                                  border: 0;
+                                  border-top: 1px solid #E0005d;
+                                  margin: 0em 0;
+                                  padding: 0;
+                              }
+
 
                              
                               
@@ -157,8 +166,9 @@ dashboardPage(
       # ),
       tabItem(tabName = "summary",
               h3(strong("KOL AND POST TRACKER"),style = "padding-right: 10cm;color: #E1005D;font-family: 'Roboto Condensed', sans-serif;"),
+              HTML('<hr>'),
               fluidRow(
-                style = "padding-top:20px",
+                style = "padding-top:40px;padding-left:10px",
                 column(5,h3(strong("TOPLINE"),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;font-size:24px")),
                 column(2,offset=2,selectInput("market_wt", "", choices = c("Japan"),width="120px")),
                 column(3,htmlOutput("summary_daterange_selector"))
@@ -182,7 +192,7 @@ dashboardPage(
               # h6(em("**Top influencer is based on the highest value of Total Average Reach")),
               # h6(em("**Top post is based on the highest value of Earned Effective Reach")),
               fluidRow(
-                style = "padding-top:100px",
+                style = "padding-top:100px;padding-left:10px",
                 column(4,h3(strong("MARKET TREND"),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;")),
                 #column(3,selectInput("Type", "Type", choices = c("reach"))),
                 column(offset=6,2,uiOutput('select_metric'))
@@ -192,13 +202,13 @@ dashboardPage(
               ), 
               
               #h2(textOutput("influencer_image_url")),
-              
+              style = "padding-left:10px",
               plotlyOutput("barplot_markettrend",height = 370),
               
              
               
               fluidRow(
-                style = "padding-top:70px",
+                style = "padding-top:70px;padding-left:10px",
                 column(3, h3(strong("POST SUMMARY"),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;")),
                 
                 #column(2,downloadButton("downloadData", "Export")),
@@ -211,10 +221,11 @@ dashboardPage(
               ),
              br(),
              #tags$head(tags$style("#post_summary_table {white-space: nowrap;}")),
+             style = "padding-top:70px;padding-left:10px",
               DT::dataTableOutput('post_summary_table'),
               h1(strong("")),
               fluidRow(
-                style = "padding-top:70px",
+                style = "padding-top:70px;padding-left:10px",
                 column(3, h3(strong("RESPONSE COMMENTS"),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;")),
                 column(offset=5,2,uiOutput('select_platform')),
                 #column(3,htmlOutput("daterange_selector"))
@@ -226,6 +237,7 @@ dashboardPage(
                 tags$style(type='text/css', "#downloadData_responsecomments { width:100%; margin-top: 20px;}")
                 
               ),
+             style = "padding-left:40px",
               DT::dataTableOutput('response_comments_table')
               
               # h3(strong("WEEKLY TREND"),style = "color: #BE9200;"),
@@ -241,6 +253,8 @@ dashboardPage(
               
       ),
       tabItem(tabName = "post_drill_down",
+              h3(strong("KOL AND POST TRACKER"),style = "padding-right: 10cm;color: #E1005D;font-family: 'Roboto Condensed', sans-serif;"),
+              HTML('<hr>'),
               
               fluidRow(
                 column(3,h3(strong("MOST RECENT POSTS"),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;")),
@@ -276,6 +290,8 @@ dashboardPage(
               
       ),
       tabItem(tabName = "influencer",
+              h3(strong("KOL AND POST TRACKER"),style = "padding-right: 10cm;color: #E1005D;font-family: 'Roboto Condensed', sans-serif;"),
+              HTML('<hr>'),
               #h3("WEEKLY TOPLINE",style = "font-family: 'Lobster', cursive;font-weight: 500; line-height: 1.1; color: #4d3a7d;")
               #box(title = "influencers",solidHeader = TRUE,width = 250,height=500),
               fluidRow(
