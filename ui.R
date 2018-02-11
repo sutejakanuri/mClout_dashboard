@@ -78,7 +78,7 @@ dashboardPage(
                               .right-side ,
                               .skin-blue .wrapper{
                               #background-color: #F7F6F6;
-                              background-image:url(background-image.jpg)
+                              background-image:url(background-image.jpg);
                               }
                               
                               
@@ -128,10 +128,12 @@ dashboardPage(
                                 border-style:solid;
                                 overflow: auto;
                                 border-color: #D3D3D3;
-                                padding-right: 2cm;
+                                padding-right: 1cm;
+                                padding-left: 1cm;
+                                background: white;
 
                               }
-                              #barplot_markettrend{
+                           #barplot_markettrend{
                                 padding-left: 40px;
                               }
 
@@ -142,8 +144,137 @@ dashboardPage(
                                   border-top: 1px solid #E0005d;
                                   margin: 0em 0;
                                   padding: 0;
+                                  padding-top:40px; 
+                                  padding-left: 1cm;
                               }
 
+                              .box{
+                                background-color: #FFF3CC;
+                              }
+                              .dynamic_box,#dynamic_UI_box > div > div > div
+                              {
+                                background-color: #FFFFFF;
+                              }
+                              
+
+
+                              .top-post-img, .top-infl-img {
+                                    border: 25px solid #F2F2F2;
+                                    border-colour : #F2F2F2;
+                                    background-color: #FFFFFF;
+                                    height: 100px;
+                                    border-radius:700%;
+                                    width: 200px;
+                                    height: 180px;
+                              }
+
+                              .select-infl-img{
+                                    border: 0px solid lightgray;
+                                    border-radius: 50%;
+                                    padding-top:20px;
+                              }
+
+                            #   #reach_text{
+                            #       border: 35px solid lightgray;
+                            #        #border-radius: 25px;
+                            #       background-color: lightgray;
+                            #       height: 100px;
+                            #       border-radius:700%;
+                            #       width: 200px;
+                            #       height: 180px;
+                            # 
+                            #       text-align: center;
+                            #       position: relative;
+                            # 
+                            # }
+
+                             
+#tip{
+padding-left: 3cm;
+padding-bottom:50cm;
+}
+#mydiv
+{ 
+  line-height: 80%;
+  font-size:20px;
+
+}
+#mydiv a
+{
+  font-size:13px;
+  color:black;
+  #font-weight:bold;
+}
+#mydiv b{
+  font-weight:bold;
+}
+#mydiv name{
+  #font-weight:bold;
+  color:black;
+  font-size:14px;
+}
+
+div.myRow1{
+
+  #box-sizing: border-box;
+ width: 1200px;
+height: 190px;
+#padding: 30px;
+border-width:2px;
+border-style:solid;
+overflow: auto;
+border-color: #D3D3D3;
+outline-offset:50px; 
+
+}
+div.summary_row{
+
+  #box-sizing: border-box;
+   width: 1200px;
+  height: 270px;
+  #padding: 30px;
+  border-width:2px;
+  border-style:solid;
+  overflow: auto;
+  border-color: #FFF3CC;
+  outline-offset:50px; 
+background-color:#FFF3CC;
+
+
+}
+
+div#selected_influencer_details,div#twitter_image,div#instagram_image,
+div#instagram_details,div#twitter_details{
+ padding-top:40px;
+}
+
+div#twitter_image,div#instagram_image{
+padding-left:30px;
+}
+
+#summary_daterange > div > input[type="text"]:nth-child(1),#summary_daterange > div > input[type="text"]:nth-child(3),
+#select_daterange_inf > div,#select_daterange_inf > div > input[type="text"]:nth-child(1),#select_daterange_inf > div > input[type="text"]:nth-child(3){
+height:34px;
+}
+
+
+html *{
+   font-family:Roboto Condensed, sans-serif;
+}
+
+div#historical_trend_chart{
+width:5%;
+height:10%
+}
+
+img.selected_influencer_image{
+  border-radius: 90%;
+  top: 23px;
+  position: relative;
+}
+div#mscore_text{
+background-color: #FFC6DE;
+}
 
                              
                               
@@ -168,31 +299,38 @@ dashboardPage(
               h3(strong("KOL AND POST TRACKER"),style = "padding-right: 10cm;color: #E1005D;font-family: 'Roboto Condensed', sans-serif;"),
               HTML('<hr>'),
               fluidRow(
-                style = "padding-top:40px;padding-left:10px",
+                style = "padding-left:10px",
                 column(5,h3(strong("TOPLINE"),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;font-size:24px")),
                 column(2,offset=2,selectInput("market_wt", "", choices = c("Japan"),width="120px")),
                 column(3,htmlOutput("summary_daterange_selector"))
                 ),
              # box(title=strong("TOP INFLUENCER"),uiOutput("top_infleuncer_image"),solidHeader = TRUE,width = 3,height=250),
               #box(title=strong("TOP POST"),uiOutput("top_post_image"),solidHeader = TRUE,width = 3,height=250),
-              box(title = strong(uiOutput("top_influencer_text"),style = "font-family: 'Roboto Condensed', sans-serif;"),uiOutput("top_infleuncer_image"),solidHeader = TRUE,width = 3,height=270),
-              box(title = strong(uiOutput("top_post_text"),style = "font-family: 'Roboto Condensed', sans-serif;"),uiOutput("top_post_image"),solidHeader = TRUE,width = 3,height=270),
-              
-              
-              #box(title=strong("TOTAL "),div(id="reach_text",h1(textOutput("display_total_reach")),style = "color: #E1005D;"),solidHeader = TRUE,width = 3,height=200 ),
-              uiOutput("EER_box"),
-              uiOutput("Engagment_box"),
+             box( title = uiOutput("top_influencer_text"),style = "font-family: 'Roboto Condensed', sans-serif;",uiOutput("top_infleuncer_image"),solidHeader = TRUE,width = 3,height=270),
+             box(title = uiOutput("top_post_text"),style = "font-family: 'Roboto Condensed', sans-serif;",uiOutput("top_post_image"),solidHeader = TRUE,width = 3,height=270),
+             uiOutput("EER_box"),
+             uiOutput("Engagment_box"),
+             # fluidRow(
+             #      class = "summary_row",
+             #      style = "padding-left:20px",
+             #      box(title = uiOutput("top_influencer_text"),style = "font-family: 'Roboto Condensed', sans-serif;",uiOutput("top_infleuncer_image"),solidHeader = TRUE,width = 3,height=270),
+             #      box(title = uiOutput("top_post_text"),style = "font-family: 'Roboto Condensed', sans-serif;",uiOutput("top_post_image"),solidHeader = TRUE,width = 3,height=270),
+             #      uiOutput("EER_box"),
+             #      uiOutput("Engagment_box")
+             # ),
              
               #bsTooltip(id="reach_text","suteja",placement = "bottom", trigger = "hover", options = list(container = "body")),
               
               #box(title=strong("TOTAL ENGAGEMENT"),h1(textOutput("display_total_engagement"),style = "color: #E1005D;"),solidHeader = TRUE,width = 3,height=200),
-             h1(strong("")),
               # h6(em(textOutput("top_platform"))),
               # h6(em("**All reach is aggregated by Sainsbury")),
               # h6(em("**Top influencer is based on the highest value of Total Average Reach")),
               # h6(em("**Top post is based on the highest value of Earned Effective Reach")),
-              fluidRow(
-                style = "padding-top:100px;padding-left:10px",
+              
+             
+             br(),br(),
+             fluidRow(
+                style = "padding-top:300px;padding-left:10px",
                 column(4,h3(strong("MARKET TREND"),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;")),
                 #column(3,selectInput("Type", "Type", choices = c("reach"))),
                 column(offset=6,2,uiOutput('select_metric'))
@@ -202,7 +340,7 @@ dashboardPage(
               ), 
               
               #h2(textOutput("influencer_image_url")),
-              style = "padding-left:10px",
+              style = "padding-left:20px",
               plotlyOutput("barplot_markettrend",height = 370),
               
              
@@ -255,17 +393,18 @@ dashboardPage(
       tabItem(tabName = "post_drill_down",
               h3(strong("KOL AND POST TRACKER"),style = "padding-right: 10cm;color: #E1005D;font-family: 'Roboto Condensed', sans-serif;"),
               HTML('<hr>'),
-              
+              br(),
               fluidRow(
+                style = "padding-left:10px",
                 column(3,h3(strong("MOST RECENT POSTS"),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;")),
-                column(offset=1,2,uiOutput('market_mostrecentposts')),
-                column(1,uiOutput('type_mostrecentposts')),
+                column(offset=1,1,uiOutput('market_mostrecentposts')),
+                column(2,uiOutput('type_mostrecentposts')),
                 column(3,uiOutput('period_mostrecentposts')),
                 column(2,downloadButton("downloadData_postdrilldown", "Export")),
                 tags$style(type='text/css', "#downloadData_postdrilldown { width:100%; margin-top: 20px;}")
               ),
               # tags$head(tags$style("#table1  {wrap;  }")),
-              
+              br(),
               DT::dataTableOutput('most_recent_post_table'), br(),br(),
               fluidRow(
                 #column(1,h6(strong("show"))),
@@ -276,31 +415,22 @@ dashboardPage(
                 #column(1,uiOutput('select_year_mrp'))
               ),
               br(),
-              uiOutput("dynamic_UI_box")
-              # fluidRow(
-              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300)),
-              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300)),
-              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300))
-              # ),
-              # fluidRow(
-              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300)),
-              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300)),
-              #   column(4,box(title=strong("TOP INFLUENCER"),solidHeader = TRUE,width = 200,height=300))
-              # )
+              div(uiOutput("dynamic_UI_box"))
               
       ),
       tabItem(tabName = "influencer",
-              h3(strong("KOL AND POST TRACKER"),style = "padding-right: 10cm;color: #E1005D;font-family: 'Roboto Condensed', sans-serif;"),
+              h3(strong("KOL AND POST TRACKER"),style = "padding-right: 10cm;position: absolute;margin-top: -30px; color: #E1005D;font-family: 'Roboto Condensed', sans-serif;"),
               HTML('<hr>'),
-              #h3("WEEKLY TOPLINE",style = "font-family: 'Lobster', cursive;font-weight: 500; line-height: 1.1; color: #4d3a7d;")
-              #box(title = "influencers",solidHeader = TRUE,width = 250,height=500),
+              br(),
+              
               fluidRow(
-                column(3,h3(strong("INFLUENCER UNIVERSE"),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;")),
-                column(offset=2,2,uiOutput("select_market_inf")),
+                style = "padding-left:10px",
+                column(4,h3(strong("INFLUENCER UNIVERSE"),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;")),
+                column(offset=1,2,uiOutput("select_market_inf")),
                 column(3,uiOutput("select_daterange_inf")),
                 column(2,uiOutput("select_metric_inf"))
               ),
-                
+              br(),br(),
               useShinyjs(),
               #uiOutput("infleuncerImage2", height = 300),
               #tags$div(id = 'placeholder') 
@@ -314,11 +444,12 @@ dashboardPage(
                               border-radius: 100%;
                               border: 1px black;
                               
+                              
                               }
                               
                               ")),
               fluidRow(
-                
+                style = "padding-left:40px",
                 column(2, tags$button(
                   id = "button1",
                   class="round action-button",
@@ -351,6 +482,7 @@ dashboardPage(
                 ))
               ),
               fluidRow(
+                style = "padding-left:40px",
                 column(2,h5(textOutput("influencer_name1"))),
                 column(2,h5(textOutput("influencer_name2"))),
                 column(2,h5(textOutput("influencer_name3"))),
@@ -358,14 +490,15 @@ dashboardPage(
                 column(2,h5(textOutput("influencer_name5")))
               ),
               fluidRow(
-                column(2,div(h5(textOutput("influencer_mscore1")),style = "color: #E1005D;")),
-                column(2,div(h5(textOutput("influencer_mscore2")),style = "color: #E1005D;")),
-                column(2,div(h5(textOutput("influencer_mscore3")),style = "color: #E1005D;")),
-                column(2,div(h5(textOutput("influencer_mscore4")),style = "color: #E1005D;")),
-                column(2,div(h5(textOutput("influencer_mscore5")),style = "color: #E1005D;"))
+                style = "padding-left:40px",
+                column(2,div(h5(textOutput("influencer_mscore1")),style = "color: #E10051;")),
+                column(2,div(h5(textOutput("influencer_mscore2")),style = "color: #E10051;")),
+                column(2,div(h5(textOutput("influencer_mscore3")),style = "color: #E10051;")),
+                column(2,div(h5(textOutput("influencer_mscore4")),style = "color: #E10051;")),
+                column(2,div(h5(textOutput("influencer_mscore5")),style = "color: #E10051;"))
               ),
               fluidRow(
-                
+                style = "padding-left:40px",
                 column(2, tags$button(
                   id = "button6",
                   class="round action-button",
@@ -405,17 +538,21 @@ dashboardPage(
                 column(2,h5(textOutput("influencer_name10")))
               ),
               fluidRow(
-                column(2,div(h5(textOutput("influencer_mscore6")),style = "color: #E1005D;")),
-                column(2,div(h5(textOutput("influencer_mscore7")),style = "color: #E1005D;")),
-                column(2,div(h5(textOutput("influencer_mscore8")),style = "color: #E1005D;")),
-                column(2,div(h5(textOutput("influencer_mscore9")),style = "color: #E1005D;")),
-                column(2,div(h5(textOutput("influencer_mscore10")),style = "color: #E1005D;"))
+                style = "padding-left:40px",
+                column(2,div(h5(textOutput("influencer_mscore6")),style = "color: #E10051;")),
+                column(2,div(h5(textOutput("influencer_mscore7")),style = "color: #E10051;")),
+                column(2,div(h5(textOutput("influencer_mscore8")),style = "color: #E10051;")),
+                column(2,div(h5(textOutput("influencer_mscore9")),style = "color: #E10051;")),
+                column(2,div(h5(textOutput("influencer_mscore10")),style = "color: #E10051;"))
               ),
               
               br(),br(),
               fluidRow(
+                class = "myRow1",
+                #column(2,htmlOutput("test_this"))
+                style = "padding-left:40px",
                 column(2,uiOutput("selected_influencer_image")),
-                tags$head(tags$style("#selected_influencer_details{color: #E1005D;}") ),
+                tags$head(tags$style("#selected_influencer_details{color: #E10051;}") ),
                 column(2,htmlOutput("selected_influencer_details")),
                 #column(1,uiOutput("facebook_image")),
                 #column(1,htmlOutput("facebook_details")),
@@ -427,29 +564,33 @@ dashboardPage(
               #dataTableOutput('influencer_stats_table'),
               
               fluidRow(
-                style = "padding-top:70px",
-                column(4,h3(strong(textOutput("title_historical_trend")),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;")),
-                column(offset=2,2,uiOutput('display_platform')),
+                style = "padding-top:70px;padding-left:10px",
+                column(3,h3(strong(textOutput("title_historical_trend")),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;")),
+                column(offset=3,2,uiOutput('display_platform')),
                 column(2,uiOutput('display_typeofposts')),
                 column(2,uiOutput('display_dimension'))
                 #column(2,uiOutput('display_month')),
                 #column(2,uiOutput('display_year'))
               ),
+              br(),
               plotlyOutput("historical_trend_chart"),
               fluidRow(
-                style = "padding-top:70px",
+                style = "padding-top:70px;padding-left:10px",
                 column(4,h3(strong(textOutput("title_sk2_post")),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;")),
                 #column(offset=4,2,uiOutput('display_typeofpost_post')),
                 column(offset=6,2,downloadButton("downloadData_sk2posts", "Export")),
                 tags$style(type='text/css', "#downloadData_sk2posts { width:100%; margin-top: 20px;}")
               ),
+              br(),
               DT::dataTableOutput('sk2_posts_table'),
               fluidRow(
-                style = "padding-top:70px",
+                style = "padding-top:70px;padding-left:10px",
                 column(3,h3(strong(textOutput("title_top_comments")),style = "color: #BE9200;font-family: 'Roboto Condensed', sans-serif;")),
                 column(offset=7,2,downloadButton("downloadData_topcomments", "Export")),
                 tags$style(type='text/css', "#downloadData_topcomments { width:100%; margin-top: 20px;}")
               ),
+              style = "padding-top:50px;",
+              br(),
               DT::dataTableOutput('top_comments_table')
               
               
